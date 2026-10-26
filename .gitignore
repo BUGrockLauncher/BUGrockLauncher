@@ -1,0 +1,81 @@
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# OS Metadata
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE & Editors
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Build & Output Directories
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+Win32/
+ARM64/
+AnyCPU/
+packages/
+BUGrock_Launcher_Bin/
+publish/
+dist/
+Releases/
+build_artifacts/
+*.nupkg
+
+# Native C++ / C++/WinRT Intermediates
+ipch/
+*.VC.db
+*.VC.opendb
+*.ilk
+*.iobj
+*.ipdb
+*.exp
+*.tlog
+*.aps
+Generated Files/
+
+# Node / Web Tooling (if any)
+node_modules/
+
+# Runtime Cache, Logs & User Data
+*.WebView2/
+*.pdb
+*.log
+[Ll]ogs/
+Log.txt
+preferences.json
+versions_uwp.json
+versions_gdk.json
+skin_cache/
+DDFW/
+imported_versions/
+
+# Minecraft Game Versions & Packages (Do not track in repo)
+Minecraft-*/
+Minecraft.Windows*/
+*.appx
+*.msix
+*.msixbundle
+
+# Instances and Backups
+instances/
+Backups instances/
+*.zip
+*.msixvc
+*.tmp
+*.bak

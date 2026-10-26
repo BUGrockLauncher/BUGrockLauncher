@@ -1,0 +1,108 @@
+﻿{
+  "skins": [
+    {
+      "localization_name": "BUG",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "BUG.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BUGAGA",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "BUGAGA.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Cool_BUG",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Cool BUG.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BBG",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "BBG.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BUG_Man",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "BUG Man.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BUG_wears_a_hat",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "BUG wears a hat.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BUGAGAGOGA",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "BUGAGAGOGA.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BUGGY_StEvE",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "BUGGY StEvE.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BUGrock",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "BUGrock.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "BUuuuG",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "BUuuuG.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Formal_BUGy",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Formal BUGy.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "missing_texture_block_skin",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "missing texture block skin.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "modern_missing_texture_block_skin",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "modern missing texture block skin.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "SteBUGve",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "SteBUGve.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Real_BUGrock_skin",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Real BUGrock skin.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Glitch_BUG",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Glitch BUG.png",
+      "type": "free"
+    },
+    {
+      "localization_name": "Shady_BUG",
+      "geometry": "geometry.humanoid.custom",
+      "texture": "Shady BUG.png",
+      "type": "free"
+    }
+  ],
+  "serialize_name": "BUG_Guy_Family",
+  "localization_name": "BUG_Guy_Family"
+}
