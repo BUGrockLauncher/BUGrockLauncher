@@ -1,0 +1,55 @@
+#include "pch.h"
+#include "combaseapi.h"
+#include <thread>
+
+using namespace winrt;
+using namespace Windows::Foundation;
+using namespace Windows::Security::Authentication::Web::Core;
+using namespace Windows::Internal::Security::Authentication::Web;
+using namespace Windows::Security::Cryptography;
+
+#define WU_NO_ACCOUNT MAKE_HRESULT(SEVERITY_ERROR, FACILITY_ITF, 0x200)
+#define WU_TOKEN_FETCH_ERROR_BASE MAKE_HRESULT(SEVERITY_ERROR, FACILITY_ITF, 0x400)
+
+extern "C" __declspec(dllexport) int  __stdcall GetWUToken(wchar_t** retToken) {
+	if (!retToken) {
+		return E_POINTER;
+	}
+	*retToken = nullptr;
+
+	try {
+		auto tokenBrokerStatics = get_activation_factory<TokenBrokerInternal, Windows::Foundation::IUnknown>();
+		auto statics = tokenBrokerStatics.as<ITokenBrokerInternalStatics>();
+		auto accounts = statics.FindAllAccountsAsync().get();
+		if (accounts.Size() == 0)
+			return WU_NO_ACCOUNT;
+		auto accountInfo = accounts.GetAt(0);
+
+		auto accountProvider = WebAuthenticationCoreManager::FindAccountProviderAsync(L"https://login.microsoft.com", L"consumers").get();
+		if (!accountProvider) {
+			return WU_TOKEN_FETCH_ERROR_BASE | static_cast<int32_t>(WebTokenRequestStatus::AccountProviderNotAvailable);
+		}
+		WebTokenRequest request(accountProvider, L"service::dcat.update.microsoft.com::MBI_SSL", L"{28520974-CE92-4F36-A219-3F255AF7E61E}");
+		auto result = WebAuthenticationCoreManager::GetTokenSilentlyAsync(request, accountInfo).get();
+		if (result.ResponseStatus() != WebTokenRequestStatus::Success) {
+			return WU_TOKEN_FETCH_ERROR_BASE | static_cast<int32_t>(result.ResponseStatus());
+		}
+		if (result.ResponseData().Size() == 0) {
+			return WU_TOKEN_FETCH_ERROR_BASE | static_cast<int32_t>(WebTokenRequestStatus::ProviderError);
+		}
+		auto token = result.ResponseData().GetAt(0).Token();
+		auto tokenBinary = CryptographicBuffer::ConvertStringToBinary(token, BinaryStringEncoding::Utf16LE);
+		auto tokenBase64 = CryptographicBuffer::EncodeToBase64String(tokenBinary);
+
+		*retToken = (wchar_t*)::CoTaskMemAlloc((tokenBase64.size() + 1) * sizeof(wchar_t));
+		if (!*retToken) {
+			return E_OUTOFMEMORY;
+		}
+		memcpy(*retToken, tokenBase64.data(), (tokenBase64.size() + 1) * sizeof(wchar_t));
+		return S_OK;
+	} catch (winrt::hresult_error const& ex) {
+		return ex.code();
+	} catch (...) {
+		return E_FAIL;
+	}
+}
