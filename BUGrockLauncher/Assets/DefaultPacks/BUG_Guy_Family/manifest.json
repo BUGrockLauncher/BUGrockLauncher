@@ -1,0 +1,17 @@
+﻿{
+  "format_version": 2,
+  "header": {
+    "name": "BUG Guy Family",
+    "description": "BUG Guy Family Skin Pack by BUGrock Launcher",
+    "uuid": "c7e3a985-64b1-4d92-b437-0ea8724d9c01",
+    "version": [1, 0, 2],
+    "min_engine_version": [1, 16, 0]
+  },
+  "modules": [
+    {
+      "type": "skin_pack",
+      "uuid": "f8a42e19-9d73-45c1-ae98-356bc0b12e02",
+      "version": [1, 0, 2]
+    }
+  ]
+}

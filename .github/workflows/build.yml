@@ -1,0 +1,73 @@
+name: Build BUGrock Launcher
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Lite & Full Standalone Releases (x64)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore NuGet Packages
+        run: nuget restore BUGrockLauncher.sln
+
+      - name: Build Native Helpers & Solution (x64 Release)
+        run: msbuild BUGrockLauncher.sln /p:Configuration=Release /p:Platform=x64 /p:RestorePackagesConfig=true /m
+
+      - name: Publish Lite Edition (Framework-Dependent)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build_artifacts\Lite
+          dotnet publish BUGrockLauncher\BUGrockLauncher.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o build_artifacts\Lite
+          Copy-Item -Path x64\Release\GDKDecryptHelper.exe, x64\Release\GDKLaunchShim.exe, x64\Release\WUTokenHelper.dll, x64\Release\Windows.Internal.Security.Authentication.Web.winmd -Destination build_artifacts\Lite -Force
+          & 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe' /target:winexe /win32icon:"BUGrockLauncher\Assets\bugrock.ico" /out:"build_artifacts\Lite\BUGrock_Check.exe" BUGrockCheck\Program.cs
+          Copy-Item -Path README.md, LICENSE.txt -Destination build_artifacts\Lite -Force
+          Remove-Item -Path build_artifacts\Lite\*.pdb, build_artifacts\Lite\*.xml -Force -ErrorAction SilentlyContinue
+
+      - name: Publish Full Standalone Edition (Self-Contained + Runtimes)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build_artifacts\Standalone
+          dotnet publish BUGrockLauncher\BUGrockLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o build_artifacts\Standalone
+          Copy-Item -Path x64\Release\GDKDecryptHelper.exe, x64\Release\GDKLaunchShim.exe, x64\Release\WUTokenHelper.dll, x64\Release\Windows.Internal.Security.Authentication.Web.winmd -Destination build_artifacts\Standalone -Force
+          & 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe' /target:winexe /win32icon:"BUGrockLauncher\Assets\bugrock.ico" /out:"build_artifacts\Standalone\BUGrock_Check.exe" BUGrockCheck\Program.cs
+          Copy-Item -Path README.md, LICENSE.txt -Destination build_artifacts\Standalone -Force
+          foreach ($dll in @("vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll", "concrt140.dll", "vccorlib140.dll")) {
+            $sysDll = Join-Path $env:SystemRoot "System32\$dll"
+            if (Test-Path $sysDll) { Copy-Item $sysDll -Destination build_artifacts\Standalone -Force }
+          }
+          Remove-Item -Path build_artifacts\Standalone\*.pdb, build_artifacts\Standalone\*.xml -Force -ErrorAction SilentlyContinue
+
+      - name: Upload Lite Edition Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BUGrock-Launcher-Lite-win-x64
+          path: build_artifacts/Lite/
+
+      - name: Upload Full Standalone Edition Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BUGrock-Launcher-Full-Standalone-win-x64
+          path: build_artifacts/Standalone/
