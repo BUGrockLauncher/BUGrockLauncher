@@ -398,7 +398,7 @@ namespace BUGrockLauncher {
 
                                 string msg = e.TryGetWebMessageAsString();
 
-                                if (msg == "CONTENT_READY" || msg == "SERVERS_FRAME_PAINTED" || msg == "SERVERS_DOM_READY") {
+                                if (msg == "SERVERS_VISUALLY_READY" || msg == "CONTENT_READY" || msg == "SERVERS_FRAME_PAINTED" || msg == "SERVERS_DOM_READY") {
                                     _ = RevealServersAsync();
                                     return;
                                 }
@@ -528,7 +528,7 @@ namespace BUGrockLauncher {
                                         _ = ApplyPerformanceScriptAsync(ServersWebView.CoreWebView2, UserPrefs.WebPerformanceMode);
                                     } catch { }
 
-                                    _ = CheckAndRevealServersAsync();
+                                    // Rely exclusively on SERVERS_VISUALLY_READY from in-page observer script
 
                                 }
 
@@ -590,36 +590,15 @@ namespace BUGrockLauncher {
                     await Task.Delay(50);
                 }
 
-                // 3. Apply the exact ZoomFactor while still covered by the overlay
+                // 3. Apply the exact ZoomFactor while still covered by the solid overlay
                 Dispatcher.Invoke(() => UpdateServersZoom());
 
-                // 4. Actively verify that server cards and video/image banners are ready in WebView2
-                if (ServersWebView?.CoreWebView2 != null) {
-                    for (int i = 0; i < 50; i++) {
-                        string isReady = await ServersWebView.CoreWebView2.ExecuteScriptAsync(
-                            "(function() {" +
-                            "   var cards = document.querySelectorAll('.server-card, .server-banner-wrap, .servers-table tbody tr, .btn-server-ip');" +
-                            "   var isDetail = window.location.pathname.indexOf('/server/') !== -1;" +
-                            "   if (!isDetail && (!cards || cards.length < 2)) return 'waiting';" +
-                            "   if (isDetail && (!cards || cards.length < 1)) return 'waiting';" +
-                            "   var banners = Array.from(document.querySelectorAll('.server-banner-wrap video, .server-banner-wrap img, .server-card video, .server-card img, .servers-table video, .servers-table img, video.mp4-fluid, img[src*=\"banner\"], img[src*=\".gif\"]'));" +
-                             "   if (!banners || banners.length === 0) return 'waiting';" +
-                             "   var ready = banners.filter(function(b) { return (b.tagName.toLowerCase() === 'video') ? (b.readyState >= 2 || b.videoWidth > 0) : (b.complete && b.naturalWidth > 0); }).length;" +
-                             "   if (ready < 1) return 'waiting';" +
-                             "   return 'ready';" +
-                            "})()"
-                        );
-                        if (isReady != null && isReady.Contains("ready")) break;
-                        await Task.Delay(80);
-                    }
-                }
-
-                // 5. Stabilization breather so Chromium finishes viewport reflow and DirectX paint
-                await Task.Delay(450);
+                // 4. Brief stabilization breather for Chromium compositor & DirectX present
+                await Task.Delay(150);
 
                 _serversRevealed = true;
 
-                // 6. Smoothly reveal the fully prepared servers card
+                // 5. Seamlessly reveal the fully rendered servers card
                 Dispatcher.Invoke(() => {
                     if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
                     if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
