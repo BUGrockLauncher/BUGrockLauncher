@@ -398,7 +398,7 @@ namespace BUGrockLauncher {
 
                                 string msg = e.TryGetWebMessageAsString();
 
-                                if (msg == "SERVERS_VISUALLY_READY" || msg == "CONTENT_READY" || msg == "SERVERS_FRAME_PAINTED" || msg == "SERVERS_DOM_READY") {
+                                if (msg == "VIDEO_PLAYING_CONFIRMED" || msg == "SERVERS_VISUALLY_READY" || msg == "CONTENT_READY" || msg == "SERVERS_FRAME_PAINTED" || msg == "SERVERS_DOM_READY") {
                                     _ = RevealServersAsync();
                                     return;
                                 }
@@ -594,7 +594,7 @@ namespace BUGrockLauncher {
                 Dispatcher.Invoke(() => UpdateServersZoom());
 
                 // 4. Brief stabilization breather for Chromium compositor & DirectX present
-                await Task.Delay(150);
+                await Task.Delay(250);
 
                 _serversRevealed = true;
 
