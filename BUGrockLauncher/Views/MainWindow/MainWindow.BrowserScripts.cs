@@ -846,81 +846,115 @@
                     } catch(e) {}
                 }
 
-                let notified = false;
-                function notifyApp() {
+                var notified = false;
+                function sendVisuallyReady(source) {
                     if (notified) return;
                     notified = true;
                     if (window.requestAnimationFrame) {
                         requestAnimationFrame(function() {
                             requestAnimationFrame(function() {
                                 setTimeout(function() {
-                                    try { window.chrome.webview.postMessage('CONTENT_READY'); } catch(e) {}
-                                }, 150);
+                                    try { window.chrome.webview.postMessage('SERVERS_VISUALLY_READY'); } catch(e) {}
+                                }, 100);
                             });
                         });
                     } else {
                         setTimeout(function() {
-                            try { window.chrome.webview.postMessage('CONTENT_READY'); } catch(e) {}
-                        }, 150);
+                            try { window.chrome.webview.postMessage('SERVERS_VISUALLY_READY'); } catch(e) {}
+                        }, 100);
                     }
                 }
 
-                // 1. Immediate check if video or image is already loaded/cached
-                function checkImmediate() {
-                    var banners = document.querySelectorAll('.server-banner-wrap video, .server-banner-wrap img, video.mp4-fluid');
-                    for (var i = 0; i < banners.length; i++) {
-                        var el = banners[i];
-                        if (el.tagName === 'VIDEO' && (el.readyState >= 2 || el.videoWidth > 0)) {
-                            notifyApp();
-                            return true;
+                function checkContentAndMediaReady() {
+                    if (notified) return true;
+                    var isDetailPage = window.location.pathname.indexOf('/server/') !== -1;
+                    var table = document.querySelector('table.servers-table');
+
+                    // If on listing page, table must exist and have rows
+                    if (!isDetailPage) {
+                        if (!table) return false;
+                        var rows = document.querySelectorAll('.servers-table tbody tr');
+                        if (!rows || rows.length < 1) return false;
+                    }
+
+                    // Check banner element inside .server-banner-wrap
+                    var firstBanner = document.querySelector('.server-banner-wrap video, .server-banner-wrap img');
+                    if (firstBanner) {
+                        if (firstBanner.tagName === 'VIDEO') {
+                            // Ready if: readyState >= 3 (decoded & ready to play), or entered/loaded class, or already playing
+                            var videoReady = (firstBanner.readyState >= 3) ||
+                                             firstBanner.classList.contains('loaded') ||
+                                             firstBanner.classList.contains('entered') ||
+                                             (firstBanner.currentTime > 0 && !firstBanner.paused) ||
+                                             (firstBanner.videoWidth > 0 && firstBanner.readyState >= 2);
+                            if (videoReady) {
+                                sendVisuallyReady('video');
+                                return true;
+                            }
+                        } else if (firstBanner.tagName === 'IMG') {
+                            // Ready if image is complete with non-zero dimensions
+                            if (firstBanner.complete && firstBanner.naturalWidth > 0) {
+                                sendVisuallyReady('image');
+                                return true;
+                            }
                         }
-                        if (el.tagName === 'IMG' && el.complete && el.naturalWidth > 0) {
-                            notifyApp();
+                        return false;
+                    }
+
+                    // Fallback: If table exists and is rendered with multiple rows but page has no banners
+                    if (!isDetailPage && table && table.offsetHeight > 100) {
+                        var cardCount = document.querySelectorAll('.server-card, .btn-server-ip').length;
+                        if (cardCount >= 2) {
+                            sendVisuallyReady('table_only');
                             return true;
                         }
                     }
+
                     return false;
                 }
 
-                if (!checkImmediate()) {
-                    // 2. Event capturing for autoplay videos starting playback
-                    document.addEventListener('play', function(e) {
-                        if (e.target && e.target.tagName === 'VIDEO') {
-                            notifyApp();
-                        }
-                    }, true);
+                // 1. Initial check
+                if (!checkContentAndMediaReady()) {
+                    // 2. Targeted event capturing on media inside .server-banner-wrap
+                    var mediaEvents = ['playing', 'canplaythrough', 'loadeddata', 'load'];
+                    for (var mi = 0; mi < mediaEvents.length; mi++) {
+                        document.addEventListener(mediaEvents[mi], function(e) {
+                            if (e.target && e.target.closest && e.target.closest('.server-banner-wrap')) {
+                                checkContentAndMediaReady();
+                            }
+                        }, true);
+                    }
 
-                    document.addEventListener('canplay', function(e) {
-                        if (e.target && e.target.tagName === 'VIDEO') {
-                            notifyApp();
+                    // 3. MutationObserver to catch vanilla-lazyload swapping data-src to src or adding 'loaded' class
+                    try {
+                        var lazyObserver = new MutationObserver(function() {
+                            if (checkContentAndMediaReady()) {
+                                lazyObserver.disconnect();
+                            }
+                        });
+                        var targetNode = document.body || document.documentElement;
+                        if (targetNode) {
+                            lazyObserver.observe(targetNode, {
+                                childList: true,
+                                subtree: true,
+                                attributes: true,
+                                attributeFilter: ['class', 'src', 'data-src']
+                            });
                         }
-                    }, true);
+                    } catch(e) {}
 
-                    document.addEventListener('loadeddata', function(e) {
-                        if (e.target && e.target.tagName === 'VIDEO') {
-                            notifyApp();
+                    // 4. Polling fallback to check state every 80ms
+                    var readyPoll = setInterval(function() {
+                        if (checkContentAndMediaReady() || notified) {
+                            clearInterval(readyPoll);
                         }
-                    }, true);
+                    }, 80);
 
-                    // 3. Event capturing for banner images loading
-                    document.addEventListener('load', function(e) {
-                        if (e.target && e.target.tagName === 'IMG') {
-                            notifyApp();
-                        }
-                    }, true);
-
-                    // 4. Polling fallback to check if an element became ready
-                    var checkInterval = setInterval(function() {
-                        if (checkImmediate() || notified) {
-                            clearInterval(checkInterval);
-                        }
-                    }, 100);
-
-                    // 5. Safety timeout
+                    // 5. Safety timeout (6.5s) in case server list has no banners or network stalls
                     setTimeout(function() {
-                        clearInterval(checkInterval);
-                        notifyApp();
-                    }, 8000);
+                        clearInterval(readyPoll);
+                        sendVisuallyReady('timeout');
+                    }, 6500);
                 }
             })();
         ";
