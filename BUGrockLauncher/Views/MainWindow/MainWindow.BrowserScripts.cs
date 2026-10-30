@@ -854,14 +854,14 @@
                         requestAnimationFrame(function() {
                             requestAnimationFrame(function() {
                                 setTimeout(function() {
-                                    try { window.chrome.webview.postMessage('SERVERS_VISUALLY_READY'); } catch(e) {}
-                                }, 100);
+                                    try { window.chrome.webview.postMessage('VIDEO_PLAYING_CONFIRMED'); } catch(e) {}
+                                }, 120);
                             });
                         });
                     } else {
                         setTimeout(function() {
-                            try { window.chrome.webview.postMessage('SERVERS_VISUALLY_READY'); } catch(e) {}
-                        }, 100);
+                            try { window.chrome.webview.postMessage('VIDEO_PLAYING_CONFIRMED'); } catch(e) {}
+                        }, 120);
                     }
                 }
 
@@ -877,24 +877,21 @@
                         if (!rows || rows.length < 1) return false;
                     }
 
-                    // Check banner element inside .server-banner-wrap
-                    var firstBanner = document.querySelector('.server-banner-wrap video, .server-banner-wrap img');
+                    // Check top banner element inside .server-banner-wrap
+                    var firstBanner = document.querySelector('.server-banner-wrap video, .server-banner-wrap img, video.mp4-fluid');
                     if (firstBanner) {
                         if (firstBanner.tagName === 'VIDEO') {
-                            // Ready if: readyState >= 3 (decoded & ready to play), or entered/loaded class, or already playing
-                            var videoReady = (firstBanner.readyState >= 3) ||
-                                             firstBanner.classList.contains('loaded') ||
-                                             firstBanner.classList.contains('entered') ||
-                                             (firstBanner.currentTime > 0 && !firstBanner.paused) ||
-                                             (firstBanner.videoWidth > 0 && firstBanner.readyState >= 2);
-                            if (videoReady) {
-                                sendVisuallyReady('video');
+                            // Video is ready ONLY when it is actively rendering frames (currentTime > 0 or playing event)
+                            var isPlaying = !firstBanner.paused && !firstBanner.ended && firstBanner.currentTime > 0;
+                            var isReadyState = (firstBanner.readyState >= 3 && firstBanner.currentTime > 0);
+                            if (isPlaying || isReadyState) {
+                                sendVisuallyReady('video_playing');
                                 return true;
                             }
                         } else if (firstBanner.tagName === 'IMG') {
                             // Ready if image is complete with non-zero dimensions
                             if (firstBanner.complete && firstBanner.naturalWidth > 0) {
-                                sendVisuallyReady('image');
+                                sendVisuallyReady('image_loaded');
                                 return true;
                             }
                         }
@@ -915,19 +912,33 @@
 
                 // 1. Initial check
                 if (!checkContentAndMediaReady()) {
-                    // 2. Targeted event capturing on media inside .server-banner-wrap
-                    var mediaEvents = ['playing', 'canplaythrough', 'loadeddata', 'load'];
+                    // 2. Targeted event capturing specifically for playing and timeupdate
+                    var mediaEvents = ['playing', 'timeupdate', 'play', 'canplaythrough', 'load'];
                     for (var mi = 0; mi < mediaEvents.length; mi++) {
                         document.addEventListener(mediaEvents[mi], function(e) {
-                            if (e.target && e.target.closest && e.target.closest('.server-banner-wrap')) {
+                            if (e.target && e.target.closest && (e.target.closest('.server-banner-wrap') || (e.target.classList && e.target.classList.contains('mp4-fluid')))) {
                                 checkContentAndMediaReady();
                             }
                         }, true);
                     }
 
-                    // 3. MutationObserver to catch vanilla-lazyload swapping data-src to src or adding 'loaded' class
+                    // 3. Attach directly to any existing video right away
+                    var directVideos = document.querySelectorAll('video.mp4-fluid, .server-banner-wrap video');
+                    for (var vi = 0; vi < directVideos.length; vi++) {
+                        var v = directVideos[vi];
+                        v.addEventListener('playing', function() { checkContentAndMediaReady(); }, { once: true });
+                        v.addEventListener('timeupdate', function() { checkContentAndMediaReady(); }, { once: true });
+                    }
+
+                    // 4. MutationObserver to catch vanilla-lazyload or dynamically added video elements
                     try {
                         var lazyObserver = new MutationObserver(function() {
+                            var newVideos = document.querySelectorAll('video.mp4-fluid, .server-banner-wrap video');
+                            for (var nvi = 0; nvi < newVideos.length; nvi++) {
+                                var nv = newVideos[nvi];
+                                nv.addEventListener('playing', function() { checkContentAndMediaReady(); }, { once: true });
+                                nv.addEventListener('timeupdate', function() { checkContentAndMediaReady(); }, { once: true });
+                            }
                             if (checkContentAndMediaReady()) {
                                 lazyObserver.disconnect();
                             }
@@ -943,18 +954,18 @@
                         }
                     } catch(e) {}
 
-                    // 4. Polling fallback to check state every 80ms
+                    // 5. Polling fallback to check state every 80ms
                     var readyPoll = setInterval(function() {
                         if (checkContentAndMediaReady() || notified) {
                             clearInterval(readyPoll);
                         }
                     }, 80);
 
-                    // 5. Safety timeout (6.5s) in case server list has no banners or network stalls
+                    // 6. Safety timeout (7s) in case server list has no banners or network stalls
                     setTimeout(function() {
                         clearInterval(readyPoll);
                         sendVisuallyReady('timeout');
-                    }, 6500);
+                    }, 7000);
                 }
             })();
         ";
