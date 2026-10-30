@@ -398,7 +398,7 @@ namespace BUGrockLauncher {
 
                                 string msg = e.TryGetWebMessageAsString();
 
-                                if (msg == "SERVERS_FRAME_PAINTED" || msg == "SERVERS_DOM_READY") {
+                                if (msg == "CONTENT_READY" || msg == "SERVERS_FRAME_PAINTED" || msg == "SERVERS_DOM_READY") {
                                     _ = RevealServersAsync();
                                     return;
                                 }

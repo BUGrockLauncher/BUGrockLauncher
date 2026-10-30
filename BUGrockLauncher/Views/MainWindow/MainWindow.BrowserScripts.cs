@@ -846,71 +846,81 @@
                     } catch(e) {}
                 }
 
-                function checkServersAndBannersReady() {
-                    // 1. Check for server cards, table rows, and IP buttons
-                    var serverCards = document.querySelectorAll('.server-card, .server-banner-wrap, .servers-table tbody tr, .btn-server-ip');
-                    var isDetailPage = window.location.pathname.indexOf('/server/') !== -1;
-                    if (!isDetailPage && (!serverCards || serverCards.length < 2)) {
-                        return false;
+                let notified = false;
+                function notifyApp() {
+                    if (notified) return;
+                    notified = true;
+                    if (window.requestAnimationFrame) {
+                        requestAnimationFrame(function() {
+                            requestAnimationFrame(function() {
+                                setTimeout(function() {
+                                    try { window.chrome.webview.postMessage('CONTENT_READY'); } catch(e) {}
+                                }, 150);
+                            });
+                        });
+                    } else {
+                        setTimeout(function() {
+                            try { window.chrome.webview.postMessage('CONTENT_READY'); } catch(e) {}
+                        }, 150);
                     }
-                    if (isDetailPage && (!serverCards || serverCards.length < 1)) {
-                        return false;
-                    }
-
-                    // 2. Check for banners (both video and img) inside the cards
-                    var banners = Array.from(document.querySelectorAll('.server-banner-wrap video, .server-banner-wrap img, .server-card video, .server-card img, .servers-table video, .servers-table img, video.mp4-fluid, img[src*=""banner""], img[src*="".gif""]'));
-                    if (!banners || banners.length === 0) {
-                        return false;
-                    }
-
-                    var readyBanners = banners.filter(function(b) {
-                        if (b.tagName.toLowerCase() === 'video') {
-                            return b.readyState >= 2 || b.videoWidth > 0;
-                        } else {
-                            return b.complete && b.naturalWidth > 0;
-                        }
-                    });
-                    if (readyBanners.length < 1) {
-                        return false;
-                    }
-
-                    return true;
                 }
 
-                var serversReadySignaled = false;
-                function notifyServersReady() {
-                    if (serversReadySignaled) return true;
-                    if (checkServersAndBannersReady()) {
-                        serversReadySignaled = true;
-                        if (window.requestAnimationFrame) {
-                            requestAnimationFrame(function() {
-                                requestAnimationFrame(function() {
-                                    setTimeout(function() {
-                                        try { window.chrome.webview.postMessage('SERVERS_FRAME_PAINTED'); } catch(e) {}
-                                    }, 200);
-                                });
-                            });
-                        } else {
-                            setTimeout(function() {
-                                try { window.chrome.webview.postMessage('SERVERS_FRAME_PAINTED'); } catch(e) {}
-                            }, 200);
+                // 1. Immediate check if video or image is already loaded/cached
+                function checkImmediate() {
+                    var banners = document.querySelectorAll('.server-banner-wrap video, .server-banner-wrap img, video.mp4-fluid');
+                    for (var i = 0; i < banners.length; i++) {
+                        var el = banners[i];
+                        if (el.tagName === 'VIDEO' && (el.readyState >= 2 || el.videoWidth > 0)) {
+                            notifyApp();
+                            return true;
                         }
-                        return true;
+                        if (el.tagName === 'IMG' && el.complete && el.naturalWidth > 0) {
+                            notifyApp();
+                            return true;
+                        }
                     }
                     return false;
                 }
 
-                if (!notifyServersReady()) {
-                    var readyInterval = setInterval(function() {
-                        if (notifyServersReady()) clearInterval(readyInterval);
-                    }, 80);
-                    setTimeout(function() {
-                        clearInterval(readyInterval);
-                        if (!serversReadySignaled) {
-                            serversReadySignaled = true;
-                            try { window.chrome.webview.postMessage('SERVERS_FRAME_PAINTED'); } catch(e) {}
+                if (!checkImmediate()) {
+                    // 2. Event capturing for autoplay videos starting playback
+                    document.addEventListener('play', function(e) {
+                        if (e.target && e.target.tagName === 'VIDEO') {
+                            notifyApp();
                         }
-                    }, 12000);
+                    }, true);
+
+                    document.addEventListener('canplay', function(e) {
+                        if (e.target && e.target.tagName === 'VIDEO') {
+                            notifyApp();
+                        }
+                    }, true);
+
+                    document.addEventListener('loadeddata', function(e) {
+                        if (e.target && e.target.tagName === 'VIDEO') {
+                            notifyApp();
+                        }
+                    }, true);
+
+                    // 3. Event capturing for banner images loading
+                    document.addEventListener('load', function(e) {
+                        if (e.target && e.target.tagName === 'IMG') {
+                            notifyApp();
+                        }
+                    }, true);
+
+                    // 4. Polling fallback to check if an element became ready
+                    var checkInterval = setInterval(function() {
+                        if (checkImmediate() || notified) {
+                            clearInterval(checkInterval);
+                        }
+                    }, 100);
+
+                    // 5. Safety timeout
+                    setTimeout(function() {
+                        clearInterval(checkInterval);
+                        notifyApp();
+                    }, 8000);
                 }
             })();
         ";
