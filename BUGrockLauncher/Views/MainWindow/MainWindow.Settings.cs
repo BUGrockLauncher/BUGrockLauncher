@@ -302,14 +302,26 @@ namespace BUGrockLauncher {
             try {
                 if (btn != null) {
                     btn.IsEnabled = false;
-                    btn.Content = "⏳ Backing up worlds...";
+                    btn.Content = "⏳ Scanning worlds...";
                 }
 
-                var (count, size, path) = await Task.Run(() => WorldBackupHelper.BackupWorldsNow());
+                var progress = new Progress<string>(status => {
+                    if (btn != null) {
+                        btn.Content = $"⏳ {status}";
+                    }
+                });
+
+                var (count, size, path) = await Task.Run(() => WorldBackupHelper.BackupWorldsNow(progress));
                 UpdateBackupStatusUI();
-                if (count > 0) {
+                if (count > 0 && !string.IsNullOrEmpty(path)) {
                     string sizeMb = (size / 1024.0 / 1024.0).ToString("F2");
                     ThemedMessageBox.Show($"Backed up {count} world(s) successfully!\nArchive size: {sizeMb} MB\n\nSaved to:\n{path}", "Backup Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    try {
+                        Process.Start("explorer.exe", $"/select,\"{path}\"");
+                    } catch {
+                        WorldBackupHelper.OpenBackupsFolder();
+                    }
                 } else {
                     ThemedMessageBox.Show("No Minecraft worlds found to backup in com.mojang.", "Notice");
                 }
