@@ -1117,7 +1117,7 @@
                                     </Grid>
                                 </Border>
                                 <!-- Live Server WebView2 (Hidden initially to prevent Win32 Airspace leaks while loading) -->
-                                <wv2:WebView2 Grid.Row="1" x:Name="ServersWebView" Visibility="Visible"/>
+                                <wv2:WebView2 Grid.Row="1" x:Name="ServersWebView" Visibility="Visible" Margin="-20000,0,20000,0"/>
 
                                 <!-- 3D Pixelated Magenta Purple Cube Loading Overlay -->
                                 <Border Grid.Row="1" x:Name="ServersLoadingOverlay" Background="#151720" Panel.ZIndex="10" Visibility="Visible">

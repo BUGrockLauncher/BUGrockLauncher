@@ -133,35 +133,19 @@ namespace BUGrockLauncher {
                     return;
                 }
 
-                // 1. Wait for webview initial navigation to complete
-                await Task.WhenAny(_serversReadyTcs.Task, Task.Delay(10000));
+                // 1. Wait briefly for webview initial navigation to start/complete without blocking on hidden window
+                await Task.WhenAny(_serversReadyTcs.Task, Task.Delay(2500));
 
-                // 2. Actively wait for server cards and video/image banners to download & decode
-                splash.SetStatus("Loading server banners...");
-                if (ServersWebView?.CoreWebView2 != null) {
-                    for (int i = 0; i < 40; i++) {
-                        try {
-                            string isReady = await ServersWebView.CoreWebView2.ExecuteScriptAsync(
-                                "(function() {" +
-                                "   var cards = document.querySelectorAll('.server-card, .server-banner-wrap, .servers-table tbody tr, .btn-server-ip');" +
-                                "   if (!cards || cards.length < 2) return 'waiting';" +
-                                "   var banners = Array.from(document.querySelectorAll('.server-banner-wrap video, .server-banner-wrap img, .server-card video, .server-card img, .servers-table video, .servers-table img, video.mp4-fluid, img[src*=\"banner\"], img[src*=\".gif\"]'));" +
-                                 "   if (!banners || banners.length === 0) return 'waiting';" +
-                                 "   var ready = banners.filter(function(b) { return (b.tagName.toLowerCase() === 'video') ? (b.readyState >= 2 || b.videoWidth > 0) : (b.complete && b.naturalWidth > 0); }).length;" +
-                                 "   if (ready < 1) return 'waiting';" +
-                                 "   return 'ready';" +
-                                "})()"
-                            );
-                            if (isReady != null && isReady.Contains("ready")) break;
-                        } catch { }
-                        await Task.Delay(150);
-                    }
-                }
-
-                // 3. Keep loading overlay visible with spinning cube until WebView signals NavigationCompleted
+                // 2. Keep ServersWebView parked off-screen behind the spinning cube overlay until RevealServersAsync() confirms video playback on MainWindow
                 Dispatcher.Invoke(() => {
                     if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
-                    if (ServersWebView != null) ServersWebView.Visibility = Visibility.Visible;
+                    if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Visible;
+                    if (ServersWebView != null) {
+                        if (!_serversRevealed) {
+                            ServersWebView.Margin = new Thickness(-20000, 0, 20000, 0);
+                        }
+                        ServersWebView.Visibility = Visibility.Visible;
+                    }
                 });
 
                 splash.SetStatus("Ready!");
@@ -189,7 +173,12 @@ namespace BUGrockLauncher {
                 "--enable-gpu-rasterization " +
                 "--enable-zero-copy " +
                 "--max-connections-per-host=32 " +
-                "--enable-quic"
+                "--enable-quic " +
+                "--autoplay-policy=no-user-gesture-required " +
+                "--disable-backgrounding-occluded-windows " +
+                "--disable-renderer-backgrounding " +
+                "--disable-background-timer-throttling " +
+                "--disable-background-media-suspend"
             );
 
             _sharedEnvironment = await CoreWebView2Environment.CreateAsync(null, null, options);
@@ -253,6 +242,7 @@ namespace BUGrockLauncher {
                 ";
             } else if (mode == "Medium") {
                 css = @"
+                    .server-banner-wrap video, .server-banner video, video.mp4-fluid, video[src*='banner'],
                     .server-banner-wrap img, .server-banner img, .card img, img.server-banner,
                     img[src*='banner'], img[src*='.gif'] {
                         display: block !important;
@@ -264,6 +254,7 @@ namespace BUGrockLauncher {
                 ";
             } else { // High - Lightning Fast Rocket Rendering
                 css = @"
+                    .server-banner-wrap video, .server-banner video, video.mp4-fluid, video[src*='banner'],
                     .server-banner-wrap img, .server-banner img, .card img, img.server-banner,
                     img[src*='banner'], img[src*='.gif'] {
                         display: block !important;
@@ -434,13 +425,12 @@ namespace BUGrockLauncher {
                                 LaunchMinecraftUri(e.Uri);
 
                                 Dispatcher.Invoke(() => {
-
-                                    if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
-
-                                    if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
-
-                                    ServersWebView.Visibility = Visibility.Visible;
-
+                                    if (_serversRevealed) {
+                                        if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
+                                        if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
+                                        ServersWebView.Margin = new Thickness(0);
+                                        ServersWebView.Visibility = Visibility.Visible;
+                                    }
                                 });
 
                                 return;
@@ -451,11 +441,7 @@ namespace BUGrockLauncher {
 
                             if (navUri.Contains("minecraftpocket-servers.com") || navUri.Contains("cloudflare.com")) {
                                 Dispatcher.Invoke(() => {
-                                    _serversRevealed = false;
-                                    if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
-                                    if (ServersLoadingOverlay != null) {
-                                        ServersLoadingOverlay.Visibility = Visibility.Visible;
-                                    }
+                                    ParkServersWebViewForLoading();
                                 });
 
                                 return;
@@ -469,13 +455,12 @@ namespace BUGrockLauncher {
                             e.Cancel = true;
 
                             Dispatcher.Invoke(() => {
-
-                                if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
-
-                                if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
-
-                                ServersWebView.Visibility = Visibility.Visible;
-
+                                if (_serversRevealed) {
+                                    if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
+                                    if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
+                                    ServersWebView.Margin = new Thickness(0);
+                                    ServersWebView.Visibility = Visibility.Visible;
+                                }
                             });
 
                         };
@@ -492,16 +477,15 @@ namespace BUGrockLauncher {
 
                                 // If navigation was intentionally cancelled (e.g. minecraft: link or blocked external url),
 
-                                // it is NOT a connection failure; keep current view visible and do not show No Internet overlay.
+                                // it is NOT a connection failure; keep current view state and do not show No Internet overlay.
 
                                 if (e.WebErrorStatus == Microsoft.Web.WebView2.Core.CoreWebView2WebErrorStatus.OperationCanceled) {
-
-                                    if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
-
-                                    if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
-
-                                    ServersWebView.Visibility = Visibility.Visible;
-
+                                    if (_serversRevealed) {
+                                        if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
+                                        if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
+                                        ServersWebView.Margin = new Thickness(0);
+                                        ServersWebView.Visibility = Visibility.Visible;
+                                    }
                                     _serversReadyTcs.TrySetResult(true);
 
                                     return;
@@ -528,7 +512,7 @@ namespace BUGrockLauncher {
                                         _ = ApplyPerformanceScriptAsync(ServersWebView.CoreWebView2, UserPrefs.WebPerformanceMode);
                                     } catch { }
 
-                                    // Rely exclusively on SERVERS_VISUALLY_READY from in-page observer script
+                                    // Rely exclusively on VIDEO_PLAYING_CONFIRMED from in-page observer script
 
                                 }
 
@@ -548,6 +532,7 @@ namespace BUGrockLauncher {
 
 
 
+                        ParkServersWebViewForLoading();
                         _serversInitialNavStarted = true;
                         ServersWebView.CoreWebView2.Navigate(AppConfig.ServersHubUrl);
 
@@ -576,35 +561,127 @@ namespace BUGrockLauncher {
 
 
         private bool _serversRevealed = false;
+        private bool _serversRevealing = false;
+        private int _serversRevealGeneration = 0;
+
+        private void ParkServersWebViewForLoading() {
+            _serversRevealed = false;
+            _serversRevealing = false;
+            _serversRevealGeneration++;
+            if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
+            if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Visible;
+            if (ServersWebView != null) {
+                ServersWebView.Margin = new Thickness(-20000, 0, 20000, 0);
+                ServersWebView.Visibility = Visibility.Visible;
+            }
+        }
 
         private async Task RevealServersAsync() {
-            if (_serversRevealed) return;
+            if (_serversRevealed || _serversRevealing) return;
+            _serversRevealing = true;
+            int gen = _serversRevealGeneration;
             try {
                 // 1. Ensure MainWindow is actually loaded and visible on screen
-                for (int w = 0; w < 100 && (!IsLoaded || !IsVisible); w++) {
+                for (int w = 0; w < 120 && (!IsLoaded || !IsVisible); w++) {
+                    if (gen != _serversRevealGeneration) return;
                     await Task.Delay(50);
                 }
 
                 // 2. Ensure ServersWebView has been measured & laid out by WPF layout pass
-                for (int w = 0; w < 60 && (ServersWebView == null || ServersWebView.ActualWidth < 100); w++) {
+                for (int w = 0; w < 80 && (ServersWebView == null || ServersWebView.ActualWidth < 100); w++) {
+                    if (gen != _serversRevealGeneration) return;
                     await Task.Delay(50);
                 }
 
                 // 3. Apply the exact ZoomFactor while still covered by the solid overlay
                 Dispatcher.Invoke(() => UpdateServersZoom());
 
-                // 4. Brief stabilization breather for Chromium compositor & DirectX present
-                await Task.Delay(1000);
+                // 4. Actively verify in WebView2 (at final window size & zoom) that the video banner is actively playing frames
+                if (ServersWebView?.CoreWebView2 != null && UserPrefs.WebPerformanceMode != "Low") {
+                    for (int i = 0; i < 120; i++) {
+                        if (gen != _serversRevealGeneration) return;
+                        try {
+                            string status = await ServersWebView.CoreWebView2.ExecuteScriptAsync(@"
+                                (function() {
+                                    if (document.readyState === 'loading') return 'waiting_dom';
+                                    var isDetail = window.location.pathname.indexOf('/server/') !== -1;
+                                    var table = document.querySelector('table.servers-table');
+                                    if (!isDetail && (!table || document.querySelectorAll('.servers-table tbody tr').length < 1)) {
+                                        return 'waiting_table';
+                                    }
+                                    var videos = Array.from(document.querySelectorAll('.server-banner-wrap video, .server-card video, .servers-table video, video.mp4-fluid, video[src*=""banner""], video[data-src*=""banner""], video[src*="".mp4""], video[data-src*="".mp4""], .content video'));
+                                    if (videos.length > 0) {
+                                        var topVideos = videos.slice(0, isDetail ? 1 : 2);
+                                        for (var k = 0; k < topVideos.length; k++) {
+                                            var v = topVideos[k];
+                                            var dSrc = v.getAttribute('data-src') || v.getAttribute('data-lazy-src');
+                                            if (dSrc && !v.getAttribute('src')) {
+                                                v.setAttribute('src', dSrc);
+                                                v.load();
+                                            }
+                                            var sources = v.querySelectorAll('source[data-src]');
+                                            var srcLoaded = false;
+                                            for (var s = 0; s < sources.length; s++) {
+                                                var sSrc = sources[s].getAttribute('data-src');
+                                                if (sSrc && !sources[s].getAttribute('src')) {
+                                                    sources[s].setAttribute('src', sSrc);
+                                                    srcLoaded = true;
+                                                }
+                                            }
+                                            if (srcLoaded) v.load();
+                                            v.muted = true;
+                                            v.playsInline = true;
+                                            v.autoplay = true;
+                                            v.preload = 'auto';
+                                            if (v.paused && !v.ended && !v.error) {
+                                                try {
+                                                    var p = v.play();
+                                                    if (p && p.catch) p.catch(function(){});
+                                                } catch(e) {}
+                                            }
+                                        }
+                                        var firstVid = topVideos[0];
+                                        if (firstVid && !firstVid.error) {
+                                            var playing = !firstVid.paused && !firstVid.ended && firstVid.readyState >= 2 && firstVid.videoWidth > 0 && firstVid.currentTime > 0;
+                                            if (!playing) return 'waiting_video';
+                                            return 'video_playing';
+                                        }
+                                    }
+                                    if (document.readyState !== 'complete') return 'waiting_complete';
+                                    var imgs = Array.from(document.querySelectorAll('.server-banner-wrap img, .server-card img[src*=""banner""], img.server-banner'));
+                                    if (imgs.length > 0) {
+                                        var firstImg = imgs[0];
+                                        if (firstImg.complete && firstImg.naturalWidth > 0) return 'image_ready';
+                                        return 'waiting_image';
+                                    }
+                                    return 'table_ready';
+                                })()
+                            ");
+                            if (status != null && (status.Contains("video_playing") || status.Contains("image_ready") || status.Contains("table_ready"))) {
+                                break;
+                            }
+                        } catch { }
+                        await Task.Delay(80);
+                    }
+                }
+
+                if (gen != _serversRevealGeneration) return;
 
                 _serversRevealed = true;
 
                 // 5. Seamlessly reveal the fully rendered servers card
                 Dispatcher.Invoke(() => {
+                    if (ServersWebView != null) {
+                        ServersWebView.Margin = new Thickness(0);
+                        ServersWebView.Visibility = Visibility.Visible;
+                    }
                     if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
                     if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
-                    if (ServersWebView != null) ServersWebView.Visibility = Visibility.Visible;
                 });
-            } catch { }
+            } catch {
+            } finally {
+                _serversRevealing = false;
+            }
         }
 
         private async Task CheckAndRevealServersAsync() {
@@ -1483,11 +1560,7 @@ namespace BUGrockLauncher {
 
             try {
 
-                if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
-
-                if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Visible;
-
-                _serversRevealed = false;
+                ParkServersWebViewForLoading();
 
 
 
@@ -1531,11 +1604,7 @@ namespace BUGrockLauncher {
 
             try {
 
-                if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
-
-                if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Visible;
-
-                _serversRevealed = false;
+                ParkServersWebViewForLoading();
 
 
 
@@ -1734,7 +1803,7 @@ namespace BUGrockLauncher {
 
                 if (ServersWebView != null) {
 
-                    ServersWebView.Visibility = Visibility.Visible;
+                    ParkServersWebViewForLoading();
 
                     try {
 
