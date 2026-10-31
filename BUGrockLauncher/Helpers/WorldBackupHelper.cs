@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace BUGrockLauncher.Helpers
 {
@@ -134,6 +135,29 @@ namespace BUGrockLauncher.Helpers
             catch { }
         }
 
+        public static void OpenPrimaryWorldsFolder()
+        {
+            try
+            {
+                var dirs = FindAllWorldsDirectories();
+                string? target = dirs.FirstOrDefault(Directory.Exists);
+                if (string.IsNullOrEmpty(target))
+                {
+                    string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    target = Path.Combine(localAppData, "Packages", "Microsoft.MinecraftUWP_8wekyb3d8bbwe", "LocalState", "games", "com.mojang");
+                    if (!Directory.Exists(target))
+                    {
+                        target = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    }
+                }
+                Process.Start(new ProcessStartInfo { FileName = target, UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("OpenPrimaryWorldsFolder error: " + ex.Message);
+            }
+        }
+
         private static void CopyDirectory(string sourceDir, string destinationDir)
         {
             var dir = new DirectoryInfo(sourceDir);
@@ -143,8 +167,17 @@ namespace BUGrockLauncher.Helpers
 
             foreach (var file in dir.GetFiles())
             {
-                string targetFilePath = Path.Combine(destinationDir, file.Name);
-                file.CopyTo(targetFilePath, true);
+                try
+                {
+                    string targetFilePath = Path.Combine(destinationDir, file.Name);
+                    using var inStream = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                    using var outStream = new FileStream(targetFilePath, FileMode.Create, FileAccess.Write, FileShare.None);
+                    inStream.CopyTo(outStream);
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine($"Skipping locked world file {file.Name}: {ex.Message}");
+                }
             }
 
             foreach (var subDir in dir.GetDirectories())

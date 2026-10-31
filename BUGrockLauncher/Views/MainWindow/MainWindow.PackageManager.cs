@@ -102,6 +102,7 @@ namespace BUGrockLauncher {
                                 var res = await pkgList[0].LaunchAsync();
                                 if (res.ExtendedError == null) {
                                     launched = true;
+                                OnMinecraftLaunched();
                                 }
                             }
                         } catch (Exception ex) {
@@ -116,6 +117,7 @@ namespace BUGrockLauncher {
                                     UseShellExecute = true
                                 });
                                 launched = true;
+                                OnMinecraftLaunched();
                             } catch (Exception ex) {
                                 Trace.WriteLine("External protocol launch failed: " + ex);
                             }
@@ -194,6 +196,7 @@ namespace BUGrockLauncher {
                             throw new Exception("No packages found for package family " + v.GamePackageFamily);
                         }
                         Trace.WriteLine("App launch finished!");
+                        OnMinecraftLaunched();
                     } catch (Exception e) {
                         Trace.WriteLine("App launch failed:\n" + e.ToString());
                         ThemedMessageBox.Show("App launch failed:\n" + e.ToString());
@@ -475,7 +478,7 @@ namespace BUGrockLauncher {
                 
                 bool proceed = Dispatcher.Invoke(() => {
                     var dialog = new WorldConflictDialog(dataLocations, destinationFolder);
-                    dialog.Owner = this;
+                    BUGrockLauncher.Helpers.ModalDialogHelper.SafeSetOwner(dialog, this);
                     return dialog.ShowDialog() == true;
                 });
                 return proceed;
@@ -635,9 +638,8 @@ namespace BUGrockLauncher {
 
         private void InvokeDownload(Version v) {
             string suggestedName = !string.IsNullOrEmpty(v.CustomInstanceName) ? v.CustomInstanceName : v.Name;
-            var dialog = new NewInstanceDialog(v.DisplayName, v.Name, suggestedName) {
-                Owner = this
-            };
+            var dialog = new NewInstanceDialog(v.DisplayName, v.Name, suggestedName);
+            BUGrockLauncher.Helpers.ModalDialogHelper.SafeSetOwner(dialog, this);
             if (dialog.ShowDialog() != true) {
                 return;
             }
@@ -767,7 +769,8 @@ namespace BUGrockLauncher {
 
         private void InvokeRename(Version v) {
             string currentName = v.CustomInstanceName ?? v.Name;
-            var dialog = new RenameInstanceDialog(currentName) { Owner = this };
+            var dialog = new RenameInstanceDialog(currentName);
+            BUGrockLauncher.Helpers.ModalDialogHelper.SafeSetOwner(dialog, this);
             if (dialog.ShowDialog() == true) {
                 string newName = dialog.NewName;
                 if (string.Equals(currentName, newName, StringComparison.OrdinalIgnoreCase)) return;
@@ -789,7 +792,8 @@ namespace BUGrockLauncher {
 
         private async void InvokeDuplicate(Version v) {
             string currentName = v.CustomInstanceName ?? v.Name;
-            var dialog = new DuplicateInstanceDialog(currentName, v.Name) { Owner = this };
+            var dialog = new DuplicateInstanceDialog(currentName, v.Name);
+            BUGrockLauncher.Helpers.ModalDialogHelper.SafeSetOwner(dialog, this);
             if (dialog.ShowDialog() != true) return;
 
             string newName = dialog.NewInstanceName;
@@ -853,7 +857,8 @@ namespace BUGrockLauncher {
                 return;
             }
 
-            var dialog = new UpgradeInstanceDialog(currentName, v.Name, targetVersionName) { Owner = this };
+            var dialog = new UpgradeInstanceDialog(currentName, v.Name, targetVersionName);
+            BUGrockLauncher.Helpers.ModalDialogHelper.SafeSetOwner(dialog, this);
             if (dialog.ShowDialog() != true) return;
 
             bool doBackup = dialog.CreateBackup;

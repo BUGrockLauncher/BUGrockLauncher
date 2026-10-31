@@ -2861,8 +2861,10 @@ namespace BUGrockLauncher {
                         } else if (UserPrefs.WebPerformanceMode == "Balanced") {
                             _ = ServersWebView.CoreWebView2.TrySuspendAsync();
                             ServersWebView.CoreWebView2.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
+                        } else if (UserPrefs.WebPerformanceMode == "High") {
+                            // High Performance: Freeze temporarily without touching or zeroing cache!
+                            _ = ServersWebView.CoreWebView2.TrySuspendAsync();
                         }
-                        // In "High" performance mode: preserve ServersWebView cached in memory for instant seamless return!
 
 
 
@@ -3552,7 +3554,7 @@ namespace BUGrockLauncher {
 
                     BrowserWebView.CoreWebView2.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Low;
 
-                    if (UserPrefs.WebPerformanceMode == "High" || UserPrefs.WebPerformanceMode == "Low") {
+                    if (UserPrefs.WebPerformanceMode == "Low") {
 
                         _ = ClearWebViewCacheAsync(BrowserWebView.CoreWebView2);
 
@@ -3777,6 +3779,28 @@ namespace BUGrockLauncher {
 
 
 
+
+        public void OnMinecraftLaunched() {
+            _ = Task.Run(async () => {
+                await Task.Delay(5000);
+                Dispatcher.Invoke(() => {
+                    try {
+                        var mcProcs = System.Diagnostics.Process.GetProcessesByName("Minecraft.Windows");
+                        bool isMcRunning = mcProcs.Length > 0;
+                        bool isLauncherMinimized = this.WindowState == WindowState.Minimized || !this.IsActive;
+
+                        if (isMcRunning && isLauncherMinimized && UserPrefs.WebPerformanceMode == "High") {
+                            System.Diagnostics.Trace.WriteLine("Game running and launcher minimized in High Performance mode: Suspending ServersWebView and clearing RAM.");
+                            if (ServersWebView?.CoreWebView2 != null) {
+                                _ = ServersWebView.CoreWebView2.TrySuspendAsync();
+                                ServersWebView.CoreWebView2.MemoryUsageTargetLevel = Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Low;
+                                _ = ClearWebViewCacheAsync(ServersWebView.CoreWebView2);
+                            }
+                        }
+                    } catch { }
+                });
+            });
+        }
 }
 
 

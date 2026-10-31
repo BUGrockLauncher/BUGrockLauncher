@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Microsoft.Web.WebView2.Core;
 using BUGrockLauncher.Helpers;
 using BUGrockLauncher.Services;
@@ -93,9 +94,8 @@ namespace BUGrockLauncher {
         }
 
         private void MenuItemSetVersionListEndpointClicked(object sender, RoutedEventArgs e) {
-            var dialog = new VersionListEndpointDialog(UserPrefs.VersionsApiUWP, UserPrefs.VersionsApiGDK) {
-                Owner = this
-            };
+            var dialog = new VersionListEndpointDialog(UserPrefs.VersionsApiUWP, UserPrefs.VersionsApiGDK);
+            BUGrockLauncher.Helpers.ModalDialogHelper.SafeSetOwner(dialog, this);
             dialog.OnEndpointChanged += OnEndpointChangedHandler;
 
             dialog.Show();
@@ -115,17 +115,25 @@ namespace BUGrockLauncher {
         }
 
         private void MenuItemFindMyDataClicked(object sender, RoutedEventArgs e) {
-            ThemedMessageBox.Show(
-                BuildDataLocationMessage("Release", MinecraftPackageFamilies.MINECRAFT) + "\n\n" +
+            string msg = BuildDataLocationMessage("Release", MinecraftPackageFamilies.MINECRAFT) + "\n\n" +
                 BuildDataLocationMessage("Preview", MinecraftPackageFamilies.MINECRAFT_PREVIEW) + "\n\n" +
-                "Note: Data folders containing no worlds are not shown.",
-                "Minecraft data locations"
+                "Note: Data folders containing no worlds are not shown.\n\nWould you like to open your primary worlds folder in File Explorer?";
+
+            var res = ThemedMessageBox.Show(
+                msg,
+                "Minecraft Worlds Locations",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Information
             );
+
+            if (res == MessageBoxResult.Yes) {
+                WorldBackupHelper.OpenPrimaryWorldsFolder();
+            }
         }
 
         private async void MenuItemCleanupForStoreInstallClicked(object sender, RoutedEventArgs e) {
             var dialog = new ProgressDialog();
-            dialog.Owner = this;
+            BUGrockLauncher.Helpers.ModalDialogHelper.SafeSetOwner(dialog, this);
             bool allowClose = false;
             dialog.Closing += (object? sender_, CancelEventArgs e_) => {
                 if (!allowClose) {
@@ -288,18 +296,30 @@ namespace BUGrockLauncher {
             RewritePrefs();
         }
 
-        private void SettingsBackupWorldsNowBtn_Click(object sender, RoutedEventArgs e) {
+        private async void SettingsBackupWorldsNowBtn_Click(object sender, RoutedEventArgs e) {
+            var btn = sender as Button;
+            object? prevContent = btn?.Content;
             try {
-                var (count, size, path) = WorldBackupHelper.BackupWorldsNow();
+                if (btn != null) {
+                    btn.IsEnabled = false;
+                    btn.Content = "⏳ Backing up worlds...";
+                }
+
+                var (count, size, path) = await Task.Run(() => WorldBackupHelper.BackupWorldsNow());
                 UpdateBackupStatusUI();
                 if (count > 0) {
                     string sizeMb = (size / 1024.0 / 1024.0).ToString("F2");
-                    ThemedMessageBox.Show($"Backed up {count} world(s) successfully!\nArchive size: {sizeMb} MB\n\nSaved to: {path}", "Backup Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                    ThemedMessageBox.Show($"Backed up {count} world(s) successfully!\nArchive size: {sizeMb} MB\n\nSaved to:\n{path}", "Backup Complete", MessageBoxButton.OK, MessageBoxImage.Information);
                 } else {
                     ThemedMessageBox.Show("No Minecraft worlds found to backup in com.mojang.", "Notice");
                 }
             } catch (Exception ex) {
                 ThemedMessageBox.Show($"Backup failed: {ex.Message}", "Backup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            } finally {
+                if (btn != null) {
+                    btn.IsEnabled = true;
+                    btn.Content = prevContent ?? "💾 Backup All Worlds Now";
+                }
             }
         }
 
