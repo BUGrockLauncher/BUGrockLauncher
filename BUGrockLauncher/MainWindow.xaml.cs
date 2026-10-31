@@ -609,13 +609,24 @@ namespace BUGrockLauncher {
                 try {
                     if (ServersWebView.CoreWebView2 != null) {
                         if (shouldShowServers) {
-                            ServersWebView.CoreWebView2.Resume();
-                            ServersWebView.CoreWebView2.MemoryUsageTargetLevel = (UserPrefs.WebPerformanceMode == "Low")
-                                ? Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Low
-                                : Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Normal;
-                            if (!_serversInitialNavStarted && (string.IsNullOrEmpty(ServersWebView.Source?.ToString()) || ServersWebView.Source.ToString() == "about:blank")) {
-                                _serversInitialNavStarted = true;
-                                ServersWebView.CoreWebView2.Navigate(AppConfig.ServersHubUrl);
+                            if (UserPrefs.WebPerformanceMode == "High" && _serversRevealed) {
+                                // High Performance Mode: Simply unfreeze in place instantly!
+                                ServersWebView.Margin = new Thickness(0);
+                                ServersWebView.Visibility = Visibility.Visible;
+                                if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
+                                try {
+                                    ServersWebView.CoreWebView2?.Resume();
+                                    ServersWebView.CoreWebView2.MemoryUsageTargetLevel = Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Normal;
+                                } catch { }
+                            } else {
+                                ServersWebView.CoreWebView2.Resume();
+                                ServersWebView.CoreWebView2.MemoryUsageTargetLevel = (UserPrefs.WebPerformanceMode == "Low")
+                                    ? Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Low
+                                    : Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Normal;
+                                if (!_serversInitialNavStarted && (string.IsNullOrEmpty(ServersWebView.Source?.ToString()) || ServersWebView.Source.ToString() == "about:blank")) {
+                                    _serversInitialNavStarted = true;
+                                    ServersWebView.CoreWebView2.Navigate(AppConfig.ServersHubUrl);
+                                }
                             }
                         } else {
                             if (UserPrefs.WebPerformanceMode == "Low") {
@@ -741,6 +752,16 @@ namespace BUGrockLauncher {
             Close();
         }
 
+
+        private static bool IsMinecraftRunning() {
+            try {
+                return Process.GetProcessesByName("Minecraft.Windows").Length > 0 ||
+                       Process.GetProcessesByName("Minecraft").Length > 0;
+            } catch {
+                return false;
+            }
+        }
+
         private CancellationTokenSource? _minimizeTrimCts = null;
 
         private void MainWindow_StateChanged(object? sender, EventArgs e) {
@@ -765,31 +786,33 @@ namespace BUGrockLauncher {
 
                         if (!isStillMinimized || token.IsCancellationRequested) return;
 
-                        // Memory & Cache Trim Rule:
-                        // 1. If In-App WebView2 is open, DO NOT touch its cache (preserve user's active browsing session).
-                        //    Clear ServersWebView cache and trim system RAM.
-                        // 2. If the main page (Play) was active or any other tab, clear ServersWebView cache to maximize Minecraft performance.
-                        await Dispatcher.InvokeAsync(async () => {
-                            try {
-                                if (ServersWebView?.CoreWebView2 != null) {
-                                    await ClearWebViewCacheAsync(ServersWebView.CoreWebView2);
+                        // STRICT RULE: Only zero the cache if Minecraft is actively running and launcher is minimized!
+                        bool mcRunning = IsMinecraftRunning();
+                        if (mcRunning) {
+                            await Dispatcher.InvokeAsync(async () => {
+                                // If in-app browser is currently open, DO NOT touch its cache!
+                                if (!isBrowserOpen) {
+                                    try {
+                                        if (BrowserWebView?.CoreWebView2 != null) {
+                                            await ClearWebViewCacheAsync(BrowserWebView.CoreWebView2);
+                                        }
+                                    } catch { }
                                 }
-                            } catch { }
 
-                            if (!isBrowserOpen) {
+                                // Clear ServersWebView cache since Minecraft is playing and launcher is minimized
                                 try {
-                                    if (BrowserWebView?.CoreWebView2 != null) {
-                                        await ClearWebViewCacheAsync(BrowserWebView.CoreWebView2);
+                                    if (ServersWebView?.CoreWebView2 != null) {
+                                        await ClearWebViewCacheAsync(ServersWebView.CoreWebView2);
                                     }
                                 } catch { }
-                            }
-                        });
+                            });
 
-                        try {
-                            GC.Collect(2, GCCollectionMode.Forced, true, true);
-                            GC.WaitForPendingFinalizers();
-                            NativeMemoryHelper.TrimWorkingSet();
-                        } catch { }
+                            try {
+                                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                                GC.WaitForPendingFinalizers();
+                                NativeMemoryHelper.TrimWorkingSet();
+                            } catch { }
+                        }
 
                     } catch (OperationCanceledException) { }
                     catch { }
