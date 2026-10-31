@@ -1,3 +1,5 @@
+using BUGrockLauncher.Helpers;
+using System.Threading;
 using BUGrockLauncher.Services;
 
 using System;
@@ -126,8 +128,10 @@ namespace BUGrockLauncher {
 
 
 
-            InitializeComponent();
+            InitializeComponent();
+
             if (Application.Current != null) { Application.Current.MainWindow = this; }
+            StateChanged += MainWindow_StateChanged;
 
 
 
@@ -614,11 +618,15 @@ namespace BUGrockLauncher {
                                 ServersWebView.CoreWebView2.Navigate(AppConfig.ServersHubUrl);
                             }
                         } else {
-                            _ = ServersWebView.CoreWebView2.TrySuspendAsync();
-                            ServersWebView.CoreWebView2.MemoryUsageTargetLevel = Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Low;
                             if (UserPrefs.WebPerformanceMode == "Low") {
+                                _ = ServersWebView.CoreWebView2.TrySuspendAsync();
+                                ServersWebView.CoreWebView2.MemoryUsageTargetLevel = Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Low;
                                 _ = ClearWebViewCacheAsync(ServersWebView.CoreWebView2);
+                            } else if (UserPrefs.WebPerformanceMode == "Balanced") {
+                                _ = ServersWebView.CoreWebView2.TrySuspendAsync();
+                                ServersWebView.CoreWebView2.MemoryUsageTargetLevel = Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Low;
                             }
+                            // In "High" performance mode: keep ServersWebView cached in memory without wiping!
                         }
                     }
                 } catch { }
@@ -730,14 +738,72 @@ namespace BUGrockLauncher {
         }
 
         private void BtnClose_Click(object sender, RoutedEventArgs e) {
-
             Close();
-
         }
 
+        private CancellationTokenSource? _minimizeTrimCts = null;
 
+        private void MainWindow_StateChanged(object? sender, EventArgs e) {
+            if (WindowState == WindowState.Minimized) {
+                _minimizeTrimCts?.Cancel();
+                _minimizeTrimCts = new CancellationTokenSource();
+                var token = _minimizeTrimCts.Token;
 
+                _ = Task.Run(async () => {
+                    try {
+                        // Wait 5 seconds after minimizing as requested
+                        await Task.Delay(5000, token);
+                        if (token.IsCancellationRequested) return;
+
+                        bool isStillMinimized = false;
+                        bool isBrowserOpen = false;
+
+                        Dispatcher.Invoke(() => {
+                            isStillMinimized = (WindowState == WindowState.Minimized);
+                            isBrowserOpen = (InAppBrowserOverlay != null && InAppBrowserOverlay.Visibility == Visibility.Visible);
+                        });
+
+                        if (!isStillMinimized || token.IsCancellationRequested) return;
+
+                        // Memory & Cache Trim Rule:
+                        // 1. If In-App WebView2 is open, DO NOT touch its cache (preserve user's active browsing session).
+                        //    Clear ServersWebView cache and trim system RAM.
+                        // 2. If the main page (Play) was active or any other tab, clear ServersWebView cache to maximize Minecraft performance.
+                        await Dispatcher.InvokeAsync(async () => {
+                            try {
+                                if (ServersWebView?.CoreWebView2 != null) {
+                                    await ClearWebViewCacheAsync(ServersWebView.CoreWebView2);
+                                }
+                            } catch { }
+
+                            if (!isBrowserOpen) {
+                                try {
+                                    if (BrowserWebView?.CoreWebView2 != null) {
+                                        await ClearWebViewCacheAsync(BrowserWebView.CoreWebView2);
+                                    }
+                                } catch { }
+                            }
+                        });
+
+                        try {
+                            GC.Collect(2, GCCollectionMode.Forced, true, true);
+                            GC.WaitForPendingFinalizers();
+                            NativeMemoryHelper.TrimWorkingSet();
+                        } catch { }
+
+                    } catch (OperationCanceledException) { }
+                    catch { }
+                });
+            } else {
+                _minimizeTrimCts?.Cancel();
+                if (TabNavPlay?.IsChecked == true && (InAppBrowserOverlay == null || InAppBrowserOverlay.Visibility != Visibility.Visible)) {
+                    if (ServersWebView != null && ServersWebView.Visibility == Visibility.Visible) {
+                        try {
+                            ServersWebView.CoreWebView2?.Resume();
+                        } catch { }
+                    }
+                }
+            }
+        }
     }
-
 }
-
