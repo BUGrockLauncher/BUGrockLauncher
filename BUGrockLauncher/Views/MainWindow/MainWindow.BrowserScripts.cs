@@ -1,4 +1,4 @@
-﻿namespace BUGrockLauncher {
+namespace BUGrockLauncher {
     public partial class MainWindow {
         private const string ANTI_COOKIE_AND_POPUP_SCRIPT = @"
             (function() {
@@ -338,7 +338,12 @@
                         padding: 0 !important;
                     }
                     /* Server Banners and Containers */
-                    .server-banner-wrap, .server-banner, div[class*='server-banner'] {
+                    .server-banner-wrap, .server-banner, div[class*='server-banner'],
+                    .server-banner-wrap video, .server-banner video, video.mp4-fluid, video[src*='banner'],
+                    .server-banner-wrap img, .server-banner img, img.server-banner, img[src*='banner'], img[src*='.gif'] {
+                        display: block !important;
+                        visibility: visible !important;
+                        opacity: 1 !important;
                         max-width: 100% !important;
                         height: auto !important;
                     }
@@ -516,7 +521,7 @@
                         color: #48BB78 !important;
                     }
                 `;
-                if (document.head) document.head.appendChild(style);
+                (document.head || document.documentElement).appendChild(style);
 
                 function killPopupsAndModals() {
                     var badEls = document.querySelectorAll('.modal, .modal-backdrop, div[role=""dialog""], div[aria-modal=""true""], .fc-dialog-container, .fc-consent-root, .fc-ab-root, div[class*=""admiral"" i], div[id*=""admiral"" i], iframe[id*=""admiral"" i], div[class*=""cookie"" i], div[class*=""consent"" i]');
@@ -848,8 +853,9 @@
 
                 var notified = false;
                 function sendVisuallyReady(source) {
-                    if (notified) return;
+                    if (notified || window.__bugrockVideoReadySent) return;
                     notified = true;
+                    window.__bugrockVideoReadySent = true;
                     if (window.requestAnimationFrame) {
                         requestAnimationFrame(function() {
                             requestAnimationFrame(function() {
@@ -865,8 +871,50 @@
                     }
                 }
 
+                function getBannerVideos() {
+                    return Array.from(document.querySelectorAll(
+                        '.server-banner-wrap video, .server-card video, .servers-table video, video.mp4-fluid, video[src*=""banner""], video[data-src*=""banner""], video[src*="".mp4""], video[data-src*="".mp4""], .content video'
+                    ));
+                }
+
+                function forceLoadBannerVideos() {
+                    var videos = getBannerVideos();
+                    for (var i = 0; i < videos.length && i < 4; i++) {
+                        var v = videos[i];
+                        var dataSrc = v.getAttribute('data-src') || v.getAttribute('data-lazy-src');
+                        if (dataSrc && !v.getAttribute('src')) {
+                            v.setAttribute('src', dataSrc);
+                            try { v.load(); } catch(e) {}
+                        }
+                        var sources = v.querySelectorAll('source[data-src]');
+                        var loadedSource = false;
+                        for (var s = 0; s < sources.length; s++) {
+                            var sDataSrc = sources[s].getAttribute('data-src');
+                            if (sDataSrc && !sources[s].getAttribute('src')) {
+                                sources[s].setAttribute('src', sDataSrc);
+                                loadedSource = true;
+                            }
+                        }
+                        if (loadedSource) {
+                            try { v.load(); } catch(e) {}
+                        }
+                        v.muted = true;
+                        v.playsInline = true;
+                        v.autoplay = true;
+                        v.preload = 'auto';
+                        if (v.paused && !v.ended && !v.error && (v.getAttribute('src') || v.currentSrc)) {
+                            try {
+                                var p = v.play();
+                                if (p && typeof p.catch === 'function') p.catch(function() {});
+                            } catch(e) {}
+                        }
+                    }
+                }
+
                 function checkContentAndMediaReady() {
-                    if (notified) return true;
+                    if (notified || window.__bugrockVideoReadySent) return true;
+                    if (document.readyState === 'loading') return false;
+
                     var isDetailPage = window.location.pathname.indexOf('/server/') !== -1;
                     var table = document.querySelector('table.servers-table');
 
@@ -877,28 +925,59 @@
                         if (!rows || rows.length < 1) return false;
                     }
 
-                    // Check top banner element inside .server-banner-wrap
-                    var firstBanner = document.querySelector('.server-banner-wrap video, .server-banner-wrap img, video.mp4-fluid');
-                    if (firstBanner) {
-                        if (firstBanner.tagName === 'VIDEO') {
-                            // Video is ready ONLY when it is actively rendering frames (currentTime > 0 or playing event)
-                            var isPlaying = !firstBanner.paused && !firstBanner.ended && firstBanner.currentTime > 0;
-                            var isReadyState = (firstBanner.readyState >= 3 && firstBanner.currentTime > 0);
-                            if (isPlaying || isReadyState) {
-                                sendVisuallyReady('video_playing');
+                    forceLoadBannerVideos();
+
+                    // 1. Prioritize all <video> banners on the page (never reveal early because of an <img> if a <video> exists)
+                    var videos = getBannerVideos();
+                    if (videos.length > 0) {
+                        var activeVid = null;
+                        for (var vi = 0; vi < videos.length; vi++) {
+                            if (!videos[vi].error) {
+                                activeVid = videos[vi];
+                                break;
+                            }
+                        }
+                        if (activeVid) {
+                            var isPlaying = !activeVid.paused && !activeVid.ended && activeVid.readyState >= 2 && activeVid.videoWidth > 0 && activeVid.currentTime > 0;
+                            if (isPlaying) {
+                                if (typeof activeVid.requestVideoFrameCallback === 'function') {
+                                    var frameFired = false;
+                                    try {
+                                        activeVid.requestVideoFrameCallback(function() {
+                                            if (!frameFired) {
+                                                frameFired = true;
+                                                sendVisuallyReady('video_frame_callback');
+                                            }
+                                        });
+                                    } catch(e) {}
+                                    setTimeout(function() {
+                                        if (!frameFired) {
+                                            frameFired = true;
+                                            sendVisuallyReady('video_playing_fallback');
+                                        }
+                                    }, 150);
+                                } else {
+                                    sendVisuallyReady('video_playing');
+                                }
                                 return true;
                             }
-                        } else if (firstBanner.tagName === 'IMG') {
-                            // Ready if image is complete with non-zero dimensions
-                            if (firstBanner.complete && firstBanner.naturalWidth > 0) {
-                                sendVisuallyReady('image_loaded');
-                                return true;
-                            }
+                            return false;
+                        }
+                    }
+
+                    // 2. Only fall back to <img> or table-only AFTER the document is 100% complete and has no <video> elements
+                    if (document.readyState !== 'complete') return false;
+
+                    var firstImg = document.querySelector('.server-banner-wrap img, .server-card img[src*=""banner""], img.server-banner');
+                    if (firstImg) {
+                        if (firstImg.complete && firstImg.naturalWidth > 0) {
+                            sendVisuallyReady('image_loaded');
+                            return true;
                         }
                         return false;
                     }
 
-                    // Fallback: If table exists and is rendered with multiple rows but page has no banners
+                    // 3. Fallback: If table exists and is rendered with multiple rows but page has no banners at all
                     if (!isDetailPage && table && table.offsetHeight > 100) {
                         var cardCount = document.querySelectorAll('.server-card, .btn-server-ip').length;
                         if (cardCount >= 2) {
@@ -910,62 +989,88 @@
                     return false;
                 }
 
+                // Avoid duplicate observers/timers if script is executed on both DocumentCreated and NavigationCompleted
+                if (window.__bugrockVideoMonitorInitialized) {
+                    forceLoadBannerVideos();
+                    checkContentAndMediaReady();
+                    return;
+                }
+                window.__bugrockVideoMonitorInitialized = true;
+
                 // 1. Initial check
                 if (!checkContentAndMediaReady()) {
-                    // 2. Targeted event capturing specifically for playing and timeupdate
-                    var mediaEvents = ['playing', 'timeupdate', 'play', 'canplaythrough', 'load'];
+                    // 2. Targeted event capturing specifically for playing, timeupdate, loadeddata, and canplay
+                    var mediaEvents = ['playing', 'timeupdate', 'loadeddata', 'canplay', 'canplaythrough', 'load', 'DOMContentLoaded'];
                     for (var mi = 0; mi < mediaEvents.length; mi++) {
                         document.addEventListener(mediaEvents[mi], function(e) {
-                            if (e.target && e.target.closest && (e.target.closest('.server-banner-wrap') || (e.target.classList && e.target.classList.contains('mp4-fluid')))) {
-                                checkContentAndMediaReady();
-                            }
+                            checkContentAndMediaReady();
                         }, true);
                     }
+                    window.addEventListener('load', function() {
+                        forceLoadBannerVideos();
+                        checkContentAndMediaReady();
+                    });
 
                     // 3. Attach directly to any existing video right away
-                    var directVideos = document.querySelectorAll('video.mp4-fluid, .server-banner-wrap video');
+                    var directVideos = getBannerVideos();
                     for (var vi = 0; vi < directVideos.length; vi++) {
                         var v = directVideos[vi];
-                        v.addEventListener('playing', function() { checkContentAndMediaReady(); }, { once: true });
-                        v.addEventListener('timeupdate', function() { checkContentAndMediaReady(); }, { once: true });
+                        v.addEventListener('playing', function() { checkContentAndMediaReady(); });
+                        v.addEventListener('timeupdate', function() { checkContentAndMediaReady(); });
                     }
 
                     // 4. MutationObserver to catch vanilla-lazyload or dynamically added video elements
-                    try {
-                        var lazyObserver = new MutationObserver(function() {
-                            var newVideos = document.querySelectorAll('video.mp4-fluid, .server-banner-wrap video');
-                            for (var nvi = 0; nvi < newVideos.length; nvi++) {
-                                var nv = newVideos[nvi];
-                                nv.addEventListener('playing', function() { checkContentAndMediaReady(); }, { once: true });
-                                nv.addEventListener('timeupdate', function() { checkContentAndMediaReady(); }, { once: true });
-                            }
-                            if (checkContentAndMediaReady()) {
-                                lazyObserver.disconnect();
-                            }
-                        });
-                        var targetNode = document.body || document.documentElement;
-                        if (targetNode) {
+                    var attachLazyObserver = function() {
+                        try {
+                            var targetNode = document.body || document.documentElement;
+                            if (!targetNode) return;
+                            var lazyObserver = new MutationObserver(function() {
+                                forceLoadBannerVideos();
+                                var newVideos = getBannerVideos();
+                                for (var nvi = 0; nvi < newVideos.length; nvi++) {
+                                    var nv = newVideos[nvi];
+                                    if (!nv.__bugrockBound) {
+                                        nv.__bugrockBound = true;
+                                        nv.addEventListener('playing', function() { checkContentAndMediaReady(); });
+                                        nv.addEventListener('timeupdate', function() { checkContentAndMediaReady(); });
+                                    }
+                                }
+                                if (checkContentAndMediaReady()) {
+                                    lazyObserver.disconnect();
+                                }
+                            });
                             lazyObserver.observe(targetNode, {
                                 childList: true,
                                 subtree: true,
                                 attributes: true,
                                 attributeFilter: ['class', 'src', 'data-src']
                             });
-                        }
-                    } catch(e) {}
+                        } catch(e) {}
+                    };
+                    attachLazyObserver();
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', attachLazyObserver);
+                    }
 
                     // 5. Polling fallback to check state every 80ms
                     var readyPoll = setInterval(function() {
-                        if (checkContentAndMediaReady() || notified) {
+                        if (checkContentAndMediaReady() || notified || window.__bugrockVideoReadySent) {
                             clearInterval(readyPoll);
                         }
                     }, 80);
 
-                    // 6. Safety timeout (7s) in case server list has no banners or network stalls
-                    setTimeout(function() {
-                        clearInterval(readyPoll);
-                        sendVisuallyReady('timeout');
-                    }, 7000);
+                    // 6. Safety timeout (12s after window load) in case server list has no banners or network stalls
+                    var startSafetyTimeout = function() {
+                        setTimeout(function() {
+                            clearInterval(readyPoll);
+                            sendVisuallyReady('timeout');
+                        }, 12000);
+                    };
+                    if (document.readyState === 'complete') {
+                        startSafetyTimeout();
+                    } else {
+                        window.addEventListener('load', startSafetyTimeout, { once: true });
+                    }
                 }
             })();
         ";
