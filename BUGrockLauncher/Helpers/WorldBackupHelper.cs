@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace BUGrockLauncher.Helpers
 {
@@ -55,51 +54,115 @@ namespace BUGrockLauncher.Helpers
             return results.ToList();
         }
 
-        public static (int worldsCount, long totalBytes, string backupPath) BackupWorldsNow()
+        public static (int worldsCount, long totalBytes, string backupPath) BackupWorldsNow(IProgress<string>? progress = null)
         {
             int totalWorlds = 0;
             string destDir = BackupsDirectory;
             string fileName = $"Worlds_Backup_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.zip";
             string destZip = Path.Combine(destDir, fileName);
 
-            string tempStaging = Path.Combine(Path.GetTempPath(), "BUGrock_WorldBackup_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempStaging);
+            // Collect all unique world directories
+            var worldDirs = FindAllWorldsDirectories();
+            var worldsToBackup = new List<(string worldName, string fullPath)>();
+            var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            try
+            foreach (var wDir in worldDirs)
             {
-                var worldDirs = FindAllWorldsDirectories();
-                var copiedWorlds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var wDir in worldDirs)
+                if (!Directory.Exists(wDir)) continue;
+                foreach (var sub in Directory.GetDirectories(wDir))
                 {
-                    foreach (var sub in Directory.GetDirectories(wDir))
+                    string wName = Path.GetFileName(sub);
+                    if (seenNames.Add(wName))
                     {
-                        string wName = Path.GetFileName(sub);
-                        if (copiedWorlds.Add(wName))
-                        {
-                            string targetSub = Path.Combine(tempStaging, wName);
-                            CopyDirectory(sub, targetSub);
-                            totalWorlds++;
-                        }
+                        worldsToBackup.Add((wName, sub));
                     }
                 }
-
-                if (totalWorlds == 0)
-                {
-                    return (0, 0, string.Empty);
-                }
-
-                ZipFile.CreateFromDirectory(tempStaging, destZip, CompressionLevel.Fastest, false);
-                long size = new FileInfo(destZip).Length;
-                return (totalWorlds, size, destZip);
             }
-            finally
+
+            if (worldsToBackup.Count == 0)
             {
+                return (0, 0, string.Empty);
+            }
+
+            // Stream directly into ZipArchive with fastest compression - ZERO intermediate temp files!
+            using (var zipStream = new FileStream(destZip, FileMode.Create, FileAccess.Write, FileShare.None, 65536))
+            using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, false))
+            {
+                for (int i = 0; i < worldsToBackup.Count; i++)
+                {
+                    var (worldName, fullPath) = worldsToBackup[i];
+                    progress?.Report($"World {i + 1}/{worldsToBackup.Count} ({worldName})");
+
+                    AddDirectoryToZip(archive, fullPath, worldName);
+                    totalWorlds++;
+                }
+            }
+
+            long size = new FileInfo(destZip).Length;
+            return (totalWorlds, size, destZip);
+        }
+
+        private static void AddDirectoryToZip(ZipArchive archive, string sourceDirPath, string rootInZip)
+        {
+            var dirInfo = new DirectoryInfo(sourceDirPath);
+            if (!dirInfo.Exists) return;
+
+            int rootLength = dirInfo.FullName.Length;
+            var dirs = new Stack<DirectoryInfo>();
+            dirs.Push(dirInfo);
+
+            byte[] buffer = new byte[65536]; // 64KB fast buffer
+
+            while (dirs.Count > 0)
+            {
+                var currentDir = dirs.Pop();
+
+                // Push subdirectories
                 try
                 {
-                    if (Directory.Exists(tempStaging)) Directory.Delete(tempStaging, true);
+                    foreach (var sub in currentDir.GetDirectories())
+                    {
+                        dirs.Push(sub);
+                    }
                 }
                 catch { }
+
+                // Add files
+                FileInfo[] files;
+                try
+                {
+                    files = currentDir.GetFiles();
+                }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        string relPath = file.FullName.Substring(rootLength).TrimStart('\\', '/');
+                        string entryName = string.IsNullOrEmpty(relPath)
+                            ? $"{rootInZip}/{file.Name}"
+                            : $"{rootInZip}/{relPath.Replace('\\', '/')}";
+
+                        var entry = archive.CreateEntry(entryName, CompressionLevel.Fastest);
+                        using (var inStream = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 65536))
+                        using (var outStream = entry.Open())
+                        {
+                            int bytesRead;
+                            while ((bytesRead = inStream.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                outStream.Write(buffer, 0, bytesRead);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.WriteLine($"Skipping locked world file {file.Name}: {ex.Message}");
+                    }
+                }
             }
         }
 
@@ -155,35 +218,6 @@ namespace BUGrockLauncher.Helpers
             catch (Exception ex)
             {
                 Trace.WriteLine("OpenPrimaryWorldsFolder error: " + ex.Message);
-            }
-        }
-
-        private static void CopyDirectory(string sourceDir, string destinationDir)
-        {
-            var dir = new DirectoryInfo(sourceDir);
-            if (!dir.Exists) return;
-
-            Directory.CreateDirectory(destinationDir);
-
-            foreach (var file in dir.GetFiles())
-            {
-                try
-                {
-                    string targetFilePath = Path.Combine(destinationDir, file.Name);
-                    using var inStream = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-                    using var outStream = new FileStream(targetFilePath, FileMode.Create, FileAccess.Write, FileShare.None);
-                    inStream.CopyTo(outStream);
-                }
-                catch (Exception ex)
-                {
-                    Trace.WriteLine($"Skipping locked world file {file.Name}: {ex.Message}");
-                }
-            }
-
-            foreach (var subDir in dir.GetDirectories())
-            {
-                string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
-                CopyDirectory(subDir.FullName, newDestinationDir);
             }
         }
     }
