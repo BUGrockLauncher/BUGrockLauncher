@@ -594,7 +594,7 @@ namespace BUGrockLauncher {
                 Dispatcher.Invoke(() => UpdateServersZoom());
 
                 // 4. Brief stabilization breather for Chromium compositor & DirectX present
-                await Task.Delay(250);
+                await Task.Delay(1000);
 
                 _serversRevealed = true;
 
