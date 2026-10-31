@@ -11,10 +11,14 @@ namespace BUGrockLauncher {
             InitializeComponent();
             _buttons = buttons;
             TitleLabel.Text = string.IsNullOrEmpty(title) ? "BUGrock Launcher" : title;
-            MessageText.Text = message;
-
-            BUGrockLauncher.Helpers.ModalDialogHelper.AttachCenterLock(this);
-
+            MessageText.Text = message;
+
+
+
+            BUGrockLauncher.Helpers.ModalDialogHelper.AttachCenterLock(this);
+
+
+
             switch (icon) {
                 case MessageBoxImage.Error:
                     IconLabel.Text = "❌";
@@ -133,13 +137,15 @@ namespace BUGrockLauncher {
                 return (MessageBoxResult)app.Dispatcher.Invoke(new Func<MessageBoxResult>(() => Show(message, title, buttons, icon, owner)));
             }
 
-            owner = BUGrockLauncher.Helpers.ModalDialogHelper.ResolveMainWindow(owner);
-
-            var dialog = new ThemedMessageBox(message, title, buttons, icon);
-            if (owner != null && owner.IsVisible) {
-                dialog.Owner = owner;
-            }
-            BUGrockLauncher.Helpers.ModalDialogHelper.CenterOnOwner(dialog);
+            owner = BUGrockLauncher.Helpers.ModalDialogHelper.ResolveMainWindow(owner);
+
+
+
+            var dialog = new ThemedMessageBox(message, title, buttons, icon);
+
+            BUGrockLauncher.Helpers.ModalDialogHelper.SafeSetOwner(dialog, owner);
+            BUGrockLauncher.Helpers.ModalDialogHelper.CenterOnOwner(dialog);
+
             MainWindow? mainWin = (owner as MainWindow) ?? (app?.MainWindow as MainWindow);
             try {
                 mainWin?.ShowModalDim();
