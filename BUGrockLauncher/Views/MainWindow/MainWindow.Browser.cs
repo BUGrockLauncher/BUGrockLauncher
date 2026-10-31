@@ -3763,22 +3763,9 @@ namespace BUGrockLauncher {
 
 
 
-        private void CloseBrowserBtn_Click(object sender, RoutedEventArgs e) {
-
-
-
+                private void CloseBrowserBtn_Click(object sender, RoutedEventArgs e) {
             CloseInAppBrowser();
-
-
-
         }
-
-
-
-    }
-
-
-
 
         public void OnMinecraftLaunched() {
             _ = Task.Run(async () => {
@@ -3801,7 +3788,5 @@ namespace BUGrockLauncher {
                 });
             });
         }
+    }
 }
-
-
-
