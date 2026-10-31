@@ -3617,45 +3617,30 @@ namespace BUGrockLauncher {
 
 
                 if (ServersWebView != null) {
-
-
-
-                    ParkServersWebViewForLoading();
-
-
-
-                    try {
-
-
-
-                        if (ServersWebView.CoreWebView2 != null) {
-
-
-
-                            ServersWebView.CoreWebView2.Resume();
-
-                            ServersWebView.CoreWebView2.MemoryUsageTargetLevel = (UserPrefs.WebPerformanceMode == "Low")
-
-                                ? CoreWebView2MemoryUsageTargetLevel.Low
-
-                                : CoreWebView2MemoryUsageTargetLevel.Normal;
-
-                            ServersWebView.CoreWebView2.Navigate(AppConfig.ServersHubUrl);
-
-
-
-                        }
-
-
-
-                    } catch { }
-
-
-
+                    if (UserPrefs.WebPerformanceMode == "High") {
+                        // High Performance Mode: Never reset, re-navigate, or zero the cache!
+                        // Simply unfreeze (Resume) in place instantly without loading overlay!
+                        ServersWebView.Margin = new Thickness(0);
+                        ServersWebView.Visibility = Visibility.Visible;
+                        if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
+                        try {
+                            ServersWebView.CoreWebView2?.Resume();
+                            ServersWebView.CoreWebView2.MemoryUsageTargetLevel = CoreWebView2MemoryUsageTargetLevel.Normal;
+                        } catch { }
+                    } else {
+                        // Low & Balanced:
+                        ParkServersWebViewForLoading();
+                        try {
+                            if (ServersWebView.CoreWebView2 != null) {
+                                ServersWebView.CoreWebView2.Resume();
+                                ServersWebView.CoreWebView2.MemoryUsageTargetLevel = (UserPrefs.WebPerformanceMode == "Low")
+                                    ? CoreWebView2MemoryUsageTargetLevel.Low
+                                    : CoreWebView2MemoryUsageTargetLevel.Normal;
+                                ServersWebView.CoreWebView2.Navigate(AppConfig.ServersHubUrl);
+                            }
+                        } catch { }
+                    }
                 }
-
-
-
                 if (InstallationsViewGrid != null) InstallationsViewGrid.Visibility = Visibility.Collapsed;
 
 
