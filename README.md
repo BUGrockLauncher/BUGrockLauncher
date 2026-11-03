@@ -1,6 +1,6 @@
 # BUGrock Launcher
 
-[![Release: v1.1.0](https://img.shields.io/badge/Release-v1.1.0-10b981?style=for-the-badge&logo=github)](https://github.com/BUGrockLauncher/BUGrockLauncher/releases)
+[![Release: v1.1.0](https://img.shields.io/badge/Release-v1.1.1-10b981?style=for-the-badge&logo=github)](https://github.com/BUGrockLauncher/BUGrockLauncher/releases)
 [![Platform: Windows x64](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-2b6cb0?style=for-the-badge&logo=windows)](https://github.com/BUGrockLauncher/BUGrockLauncher)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](LICENSE.txt)
 
@@ -48,11 +48,7 @@ Every release is packaged into two distinct distributions available on the [**Re
 - **Animation Control**: Smooth ease-in-out UI transitions with a master toggle in **Settings & Tools** to disable animations entirely on lower-end hardware.
 - **Low-Performance Mode**: Automatically disables animations and reduces background rendering tasks when set to Low mode.
 
-### 6. Interactive 3D Skin Viewer
-- **Real-Time Mouse Tracking**: 3D character preview model that follows cursor movement across the screen and smoothly interpolates back to center.
-- **Custom Skin Import**: Load and apply custom 64x64 or 64x32 `.png` skins with instant 3D preview.
-
-### 7. System Diagnostics (`BUGrock_Check`)
+### 6. System Diagnostics (`BUGrock_Check`)
 - **Dependency Verification**: Bundled diagnostic utility to inspect necessary Windows deployment services (`AppXSvc`, `ClipSvc`, `GamingServices`, `wuauserv`).
 - **Auto-Repair**: One-click startup repair for missing or disabled Windows gaming and store services.
 
