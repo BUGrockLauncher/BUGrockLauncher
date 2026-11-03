@@ -2,11 +2,11 @@
 
 ## Supported Versions
 
-Only the latest public release / beta branch of **BUGrock Launcher** is actively supported with security updates.
+Only the latest release of **BUGrock Launcher** is actively supported with security updates.
 
 | Version | Supported |
 | :--- | :--- |
-| **Beta 2 (Latest)** | :white_check_mark: |
+| **v1.1.0 (Latest)** | :white_check_mark: |
 | **Older Versions** | :x: |
 
 ## Reporting a Vulnerability
