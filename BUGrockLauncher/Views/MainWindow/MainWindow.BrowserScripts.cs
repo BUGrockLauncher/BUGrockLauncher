@@ -23,7 +23,10 @@ namespace BUGrockLauncher {
                     }
                 }
 
-                if (window.location.hostname.indexOf('mcpedl.com') !== -1) {
+                var isMcpedl = window.location.hostname.indexOf('mcpedl.com') !== -1;
+                var isCurseForge = window.location.hostname.indexOf('curseforge.com') !== -1;
+
+                if (isMcpedl) {
                     applyNativeSiteDarkMode();
                 }
 
@@ -36,9 +39,9 @@ namespace BUGrockLauncher {
                     window.adsbygoogle = { push: function() {}, loaded: true };
                 } catch(e) {}
 
-                // 3. Inject CSS for Ads, Empty Sidebar & Cookie Banners ONLY (NO manual color or text overrides!)
+                // 3. Inject CSS for Ads & Cookie Banners (Preserve CurseForge sidebar and download actions)
                 var style = document.createElement('style');
-                style.innerHTML = `
+                var cssRules = `
                     #onetrust-consent-sdk, #onetrust-banner-sdk, .qc-cmp2-container, #cmpbox,
                     .cookie-banner, .cookie-notice, .cookieConsent, div[class*='cookie' i], div[id*='cookie' i],
                     div[class*='consent' i], div[id*='consent' i], .fc-consent-root,
@@ -72,75 +75,93 @@ namespace BUGrockLauncher {
                         margin: 0 !important;
                         padding: 0 !important;
                     }
-                    /* Remove MCPEDL empty right sidebar and expand main content full-width */
-                    aside, .sidebar, .right-sidebar, .layout__sidebar, .post__sidebar,
-                    div[class*='sidebar'], div[id*='sidebar'] {
-                        display: none !important;
-                        visibility: hidden !important;
-                        width: 0 !important;
-                        max-width: 0 !important;
-                        min-width: 0 !important;
-                        flex: 0 0 0% !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        pointer-events: none !important;
-                    }
-                    .layout__main, .layout-main, .content__main, .content-main,
-                    main, .main-content, .posts-list, .posts, .app-layout__content,
-                    div[class*='layout__main'], div[class*='content__main'] {
-                        max-width: 100% !important;
-                        width: 100% !important;
-                        flex: 1 1 100% !important;
-                        margin-right: 0 !important;
-                        padding-right: 0 !important;
-                    }
-                    /* NitroPay, Freestar, AdThrive, and in-article ad slots */
-                    div[id*='nitropay'], div[class*='nitropay'], iframe[src*='nitropay'],
-                    div[id*='np-'], div[class*='np-'], [id*='mcpedl_post'], [id*='article__ad'],
-                    [class*='article__ad'], [class*='post__ad'], [id*='post__ad'],
-                    div[class*='ad-container'], div[class*='ad-slot'], div[class*='ad-wrapper'],
-                    div[class*='ad-banner'], div[id*='ad-banner'], div[class*='advertisement'],
-                    div[id*='advertisement'], div[data-ad-width], div[data-ad-height] {
-                        display: none !important;
-                        height: 0 !important;
-                        width: 0 !important;
-                        min-height: 0 !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        pointer-events: none !important;
-                        opacity: 0 !important;
-                        visibility: hidden !important;
-                    }
-                    /* Prominent Skip to Downloads button in place of the ad banner */
-                    a[href*='#download'], .skip-to-downloads, a.skip-to-downloads {
-                        display: flex !important;
-                        align-items: center !important;
-                        justify-content: center !important;
-                        width: 100% !important;
-                        box-sizing: border-box !important;
-                        background-color: #1F2937 !important;
-                        background: #1F2937 !important;
-                        color: #10B981 !important;
-                        border: 1px solid #374151 !important;
-                        border-radius: 8px !important;
-                        padding: 12px 20px !important;
-                        margin: 12px 0 16px 0 !important;
-                        font-size: 15px !important;
-                        font-weight: 700 !important;
-                        text-decoration: none !important;
-                        text-align: center !important;
-                        cursor: pointer !important;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
-                    }
-                    a[href*='#download']:hover, .skip-to-downloads:hover, a.skip-to-downloads:hover {
-                        background-color: #283344 !important;
-                        border-color: #10B981 !important;
-                        color: #34D399 !important;
-                    }
                 `;
+
+                if (isMcpedl) {
+                    cssRules += `
+                        /* Remove MCPEDL empty right sidebar and expand main content full-width */
+                        aside, .sidebar, .right-sidebar, .layout__sidebar, .post__sidebar,
+                        div[class*='sidebar'], div[id*='sidebar'] {
+                            display: none !important;
+                            visibility: hidden !important;
+                            width: 0 !important;
+                            max-width: 0 !important;
+                            min-width: 0 !important;
+                            flex: 0 0 0% !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            pointer-events: none !important;
+                        }
+                        .layout__main, .layout-main, .content__main, .content-main,
+                        main, .main-content, .posts-list, .posts, .app-layout__content,
+                        div[class*='layout__main'], div[class*='content__main'] {
+                            max-width: 100% !important;
+                            width: 100% !important;
+                            flex: 1 1 100% !important;
+                            margin-right: 0 !important;
+                            padding-right: 0 !important;
+                        }
+                        /* NitroPay, Freestar, AdThrive, and in-article ad slots */
+                        div[id*='nitropay'], div[class*='nitropay'], iframe[src*='nitropay'],
+                        div[id*='np-'], div[class*='np-'], [id*='mcpedl_post'], [id*='article__ad'],
+                        [class*='article__ad'], [class*='post__ad'], [id*='post__ad'],
+                        div[data-ad-width], div[data-ad-height] {
+                            display: none !important;
+                            height: 0 !important;
+                            width: 0 !important;
+                            min-height: 0 !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            pointer-events: none !important;
+                            opacity: 0 !important;
+                            visibility: hidden !important;
+                        }
+                        /* Prominent Skip to Downloads button in place of the ad banner */
+                        a[href*='#download'], .skip-to-downloads, a.skip-to-downloads {
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            width: 100% !important;
+                            box-sizing: border-box !important;
+                            background-color: #1F2937 !important;
+                            background: #1F2937 !important;
+                            color: #10B981 !important;
+                            border: 1px solid #374151 !important;
+                            border-radius: 8px !important;
+                            padding: 12px 20px !important;
+                            margin: 12px 0 16px 0 !important;
+                            font-size: 15px !important;
+                            font-weight: 700 !important;
+                            text-decoration: none !important;
+                            text-align: center !important;
+                            cursor: pointer !important;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+                        }
+                        a[href*='#download']:hover, .skip-to-downloads:hover, a.skip-to-downloads:hover {
+                            background-color: #283344 !important;
+                            border-color: #10B981 !important;
+                            color: #34D399 !important;
+                        }
+                    `;
+                }
+
+                if (isCurseForge) {
+                    cssRules += `
+                        /* Preserve CurseForge project sidebar, download CTA, and file controls */
+                        aside, .project-sidebar, .sidebar, .sidebar-wrapper, div[class*='sidebar'],
+                        .download-cta, .btn-cta, a[href*='/download'], button[class*='download' i],
+                        div[class*='details' i], div[class*='files' i], div[class*='file-row' i] {
+                            visibility: visible !important;
+                            opacity: 1 !important;
+                            pointer-events: auto !important;
+                        }
+                    `;
+                }
+
+                style.innerHTML = cssRules;
                 if (document.head) document.head.appendChild(style);
 
-                // 4. Auto-dismiss any detected consent/adblock popups, ads, floating videos, and sidebars
+                // 4. Auto-dismiss any detected consent/adblock popups, ads, and floating videos
                 function dismissOverlays() {
                     var selectors = [
                         '#onetrust-reject-all-handler',
@@ -156,8 +177,8 @@ namespace BUGrockLauncher {
                         }
                     }
 
-                    // Purge ads, videos, sidebars, and NitroPay units
-                    var bads = document.querySelectorAll(`
+                    // Purge ads, videos, and trackers (CurseForge sidebar is strictly preserved)
+                    var badsQuery = `
                         ins.adsbygoogle, .adsbygoogle, iframe[src*='googlesyndication'],
                         div[id*='google_ads'], div[class*='ad-container'], div[class*='ad-slot'],
                         div[id*='primis'], div[class*='primis'], div[id*='connatix'], div[class*='connatix'],
@@ -165,58 +186,62 @@ namespace BUGrockLauncher {
                         div[id*='nitropay'], div[class*='nitropay'], iframe[src*='nitropay'],
                         div[id*='np-'], div[class*='np-'], [id*='mcpedl_post'], [id*='article__ad'],
                         [class*='article__ad'], [class*='post__ad'], [id*='post__ad'],
-                        aside, .sidebar, .layout__sidebar, .post__sidebar, div[class*='sidebar'],
                         div[class*='floating-player'], div[class*='sticky-player'], div[id*='floating-player'],
                         div[class*='video-ad'], div[id*='video-ad'], div[class*='jwplayer'],
                         lite-youtube, .lite-youtube, iframe[src*='youtube']
-                    `);
+                    `;
+                    if (isMcpedl) {
+                        badsQuery += `, aside, .sidebar, .layout__sidebar, .post__sidebar, div[class*='sidebar']`;
+                    }
+                    var bads = document.querySelectorAll(badsQuery);
                     for (var b = 0; b < bads.length; b++) {
                         bads[b].remove();
                     }
 
-                    // Format Skip to Downloads button and obliterate any ad between it and Introduction
-                    var allLinks = document.querySelectorAll('a');
-                    for (var i = 0; i < allLinks.length; i++) {
-                        var aEl = allLinks[i];
-                        var aTxt = (aEl.textContent || '').trim().toLowerCase();
-                        var aHref = aEl.getAttribute('href') || '';
-                        if (aTxt.indexOf('skip to download') !== -1 || (aHref.indexOf('#download') !== -1 && aTxt.indexOf('download') !== -1)) {
-                            if (aEl.textContent.indexOf('NOT AD :)') === -1) {
-                                aEl.textContent = 'Skip to Downloads - NOT AD :) >';
-                            }
-                            aEl.style.setProperty('display', 'flex', 'important');
-                            aEl.style.setProperty('align-items', 'center', 'important');
-                            aEl.style.setProperty('justify-content', 'center', 'important');
-                            aEl.style.setProperty('width', '100%', 'important');
-                            aEl.style.setProperty('margin', '12px 0 16px 0', 'important');
-                            aEl.style.setProperty('padding', '12px 20px', 'important');
-                            aEl.style.setProperty('background-color', '#1F2937', 'important');
-                            aEl.style.setProperty('background', '#1F2937', 'important');
-                            aEl.style.setProperty('color', '#10B981', 'important');
-                            aEl.style.setProperty('border', '1px solid #374151', 'important');
-                            aEl.style.setProperty('border-radius', '8px', 'important');
-                            aEl.style.setProperty('font-size', '15px', 'important');
-                            aEl.style.setProperty('font-weight', '700', 'important');
-                            aEl.style.setProperty('text-decoration', 'none', 'important');
-                            aEl.style.setProperty('box-sizing', 'border-box', 'important');
-
-                            // Remove any sibling element between skip link and INTRODUCTION / DESCRIPTION
-                            var currEl = aEl.parentElement ? aEl.parentElement : aEl;
-                            var nextEl = currEl.nextElementSibling;
-                            while (nextEl) {
-                                var nextText = (nextEl.textContent || '').trim().toUpperCase();
-                                if (nextText.indexOf('INTRODUCTION') !== -1 || nextText.indexOf('DESCRIPTION') !== -1 || nextEl.querySelector('h2, h3')) {
-                                    break;
+                    if (isMcpedl) {
+                        // Format Skip to Downloads button and obliterate any ad between it and Introduction
+                        var allLinks = document.querySelectorAll('a');
+                        for (var i = 0; i < allLinks.length; i++) {
+                            var aEl = allLinks[i];
+                            var aTxt = (aEl.textContent || '').trim().toLowerCase();
+                            var aHref = aEl.getAttribute('href') || '';
+                            if (aTxt.indexOf('skip to download') !== -1 || (aHref.indexOf('#download') !== -1 && aTxt.indexOf('download') !== -1)) {
+                                if (aEl.textContent.indexOf('NOT AD :)') === -1) {
+                                    aEl.textContent = 'Skip to Downloads - NOT AD :) >';
                                 }
-                                var toKill = nextEl;
-                                nextEl = nextEl.nextElementSibling;
-                                toKill.remove();
+                                aEl.style.setProperty('display', 'flex', 'important');
+                                aEl.style.setProperty('align-items', 'center', 'important');
+                                aEl.style.setProperty('justify-content', 'center', 'important');
+                                aEl.style.setProperty('width', '100%', 'important');
+                                aEl.style.setProperty('margin', '12px 0 16px 0', 'important');
+                                aEl.style.setProperty('padding', '12px 20px', 'important');
+                                aEl.style.setProperty('background-color', '#1F2937', 'important');
+                                aEl.style.setProperty('background', '#1F2937', 'important');
+                                aEl.style.setProperty('color', '#10B981', 'important');
+                                aEl.style.setProperty('border', '1px solid #374151', 'important');
+                                aEl.style.setProperty('border-radius', '8px', 'important');
+                                aEl.style.setProperty('font-size', '15px', 'important');
+                                aEl.style.setProperty('font-weight', '700', 'important');
+                                aEl.style.setProperty('text-decoration', 'none', 'important');
+                                aEl.style.setProperty('box-sizing', 'border-box', 'important');
+
+                                // Remove any sibling element between skip link and INTRODUCTION / DESCRIPTION
+                                var currEl = aEl.parentElement ? aEl.parentElement : aEl;
+                                var nextEl = currEl.nextElementSibling;
+                                while (nextEl) {
+                                    var nextText = (nextEl.textContent || '').trim().toUpperCase();
+                                    if (nextText.indexOf('INTRODUCTION') !== -1 || nextText.indexOf('DESCRIPTION') !== -1 || nextEl.querySelector('h2, h3')) {
+                                        break;
+                                    }
+                                    var toKill = nextEl;
+                                    nextEl = nextEl.nextElementSibling;
+                                    toKill.remove();
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
-
-                    // Kill any floating video container docked at bottom-right
+                // Kill any floating video container docked at bottom-right
                     var fixedEls = document.querySelectorAll('div, iframe');
                     for (var j = 0; j < fixedEls.length; j++) {
                         var el = fixedEls[j];
