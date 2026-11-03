@@ -1,4 +1,4 @@
-# Versioning Policy Rule
+# Versioning & Release Policy Rule
 
 After EVERY update, bug fix, feature addition, or UI edit (regardless of how small):
 1. **Assess the impact**:
@@ -9,4 +9,13 @@ After EVERY update, bug fix, feature addition, or UI edit (regardless of how sma
    - `MainWindow.xaml`: The status bar version label `<TextBlock Text="vX.Y.Z" ... />`
    - `BUGrockLauncher.csproj`: `<Version>`, `<AssemblyVersion>`, `<FileVersion>`
    - `README.md` badge and release header.
-3. Always make sure compiled binaries will reflect the exact File and Product version in Windows Explorer properties.
+   - `SECURITY.md` supported version table.
+3. **Local Release Hub**:
+   - Build/download the `.zip` packages for both Full Standalone and Lite into `E:\antigravity\Proj\BUG`.
+   - Name each zip explicitly with the version: `BUGrock-Launcher-vX.Y.Z-Full-Standalone-win-x64.zip` and `BUGrock-Launcher-vX.Y.Z-Lite-win-x64.zip`.
+   - Extract both folders next to the zips for instant local testing.
+4. **GitHub Releases Hub**:
+   - Always update the official GitHub Releases page on `BUGrockLauncher/BUGrockLauncher`.
+   - Create or update the Release matching the version tag `vX.Y.Z`.
+   - Upload both asset packages (`Full-Standalone` and `Lite`) to the Release so users downloading from the Releases page always get the true latest version.
+   - Mark the new release as `Latest Release`.
