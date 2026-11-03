@@ -623,7 +623,7 @@ namespace BUGrockLauncher {
                 if (!shouldShowServers) {
                     ServersWebView.Margin = new Thickness(-20000, 0, 20000, 0);
                     try {
-                        ServersWebView.CoreWebView2?.Suspend();
+                        _ = ServersWebView.CoreWebView2.TrySuspendAsync();
                     } catch { }
                 }
                 try {
