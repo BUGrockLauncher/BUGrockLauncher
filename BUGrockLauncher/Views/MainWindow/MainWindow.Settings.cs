@@ -187,26 +187,45 @@ namespace BUGrockLauncher {
                     }
                 }
 
+                // 1.5. Smooth Animations
+                AnimationHelper.IsLowPerformanceMode = (UserPrefs.WebPerformanceMode == "Low");
+                if (AnimationHelper.IsLowPerformanceMode) {
+                    UserPrefs.SmoothAnimationsEnabled = false;
+                }
+                if (SettingsSmoothAnimationsToggle != null) {
+                    SettingsSmoothAnimationsToggle.IsChecked = UserPrefs.SmoothAnimationsEnabled;
+                    AnimationHelper.UpdatePillState(SettingsSmoothAnimationsToggle, animate: false);
+                }
+                AnimationHelper.AreAnimationsEnabled = UserPrefs.SmoothAnimationsEnabled;
+                UpdateAnimationStatusUI();
+
                 // 2. World Backups
                 if (SettingsAutoBackupToggle != null) {
                     SettingsAutoBackupToggle.IsChecked = UserPrefs.WorldAutoBackupEnabled;
+                    AnimationHelper.UpdatePillState(SettingsAutoBackupToggle, animate: false);
                 }
                 UpdateBackupStatusUI();
 
                 // 3. Discord RPC
                 if (SettingsDiscordRpcToggle != null) {
                     SettingsDiscordRpcToggle.IsChecked = UserPrefs.DiscordRpcEnabled;
+                    AnimationHelper.UpdatePillState(SettingsDiscordRpcToggle, animate: false);
                 }
                 UpdateDiscordStatusUI();
 
                 // 4. General Preferences
                 if (SettingsAutoKeysToggle != null) {
                     SettingsAutoKeysToggle.IsChecked = UserPrefs.AutoFetchDecryptionKeys;
+                    AnimationHelper.UpdatePillState(SettingsAutoKeysToggle, animate: false);
                 }
                 if (SettingsDeleteAppxToggle != null) {
                     SettingsDeleteAppxToggle.IsChecked = UserPrefs.DeleteAppxAfterDownload;
+                    AnimationHelper.UpdatePillState(SettingsDeleteAppxToggle, animate: false);
                 }
-            } catch (Exception ex) {
+                if (SettingsFpsUnlockToggle != null) {
+                    AnimationHelper.UpdatePillState(SettingsFpsUnlockToggle, animate: false);
+                }
+                            } catch (Exception ex) {
                 Trace.WriteLine("LoadSettingsPageData error: " + ex.Message);
             }
         }
@@ -288,6 +307,99 @@ namespace BUGrockLauncher {
                 Process.Start(new ProcessStartInfo { FileName = files[0], UseShellExecute = true });
             } else {
                 ThemedMessageBox.Show("No options.txt file found. Run Minecraft Bedrock at least once or apply optimizations first.", "Notice");
+            }
+        }
+
+        
+
+        private void UpdateAnimationStatusUI() {
+            try {
+                bool isLow = (UserPrefs.WebPerformanceMode == "Low");
+                bool enabled = AnimationHelper.IsActive;
+                if (SettingsAnimStatusBadge != null && SettingsAnimStatusLabel != null) {
+                    if (enabled) {
+                        SettingsAnimStatusBadge.Background = new SolidColorBrush(Color.FromRgb(0x1C, 0x2E, 0x24));
+                        SettingsAnimStatusBadge.BorderBrush = new SolidColorBrush(Color.FromRgb(0x38, 0xA1, 0x69));
+                        SettingsAnimStatusLabel.Text = "Smooth 60fps Animations: ACTIVE";
+                        SettingsAnimStatusLabel.Foreground = new SolidColorBrush(Color.FromRgb(0x38, 0xA1, 0x69));
+                    } else {
+                        SettingsAnimStatusBadge.Background = new SolidColorBrush(Color.FromRgb(0x28, 0x1A, 0x1A));
+                        SettingsAnimStatusBadge.BorderBrush = new SolidColorBrush(Color.FromRgb(0xE5, 0x3E, 0x3E));
+                        SettingsAnimStatusLabel.Text = isLow
+                            ? "Disabled in Low Perf Mode (0ms Instant Snap)"
+                            : "Instant 0ms Mode (Animations DISABLED)";
+                        SettingsAnimStatusLabel.Foreground = new SolidColorBrush(Color.FromRgb(0xFC, 0x81, 0x81));
+                    }
+                }
+                            } catch { }
+        }
+
+        private void SettingsSmoothAnimationsToggle_Click(object sender, RoutedEventArgs e) {
+            if (UserPrefs.WebPerformanceMode == "Low") {
+                // In Low mode, all animations remain strictly disabled as requested
+                UserPrefs.SmoothAnimationsEnabled = false;
+                AnimationHelper.IsLowPerformanceMode = true;
+                AnimationHelper.AreAnimationsEnabled = false;
+                if (SettingsSmoothAnimationsToggle != null) {
+                    SettingsSmoothAnimationsToggle.IsChecked = false;
+                    AnimationHelper.UpdatePillState(SettingsSmoothAnimationsToggle, animate: false);
+                }
+                UpdateAnimationStatusUI();
+                RewritePrefs();
+                return;
+            }
+            UserPrefs.SmoothAnimationsEnabled = SettingsSmoothAnimationsToggle.IsChecked ?? true;
+            AnimationHelper.AreAnimationsEnabled = UserPrefs.SmoothAnimationsEnabled;
+            UpdateAnimationStatusUI();
+            RewritePrefs();
+            if (ServersWebView?.CoreWebView2 != null) {
+                _ = ApplyPerformanceScriptAsync(ServersWebView.CoreWebView2, UserPrefs.WebPerformanceMode);
+            }
+            if (BrowserWebView?.CoreWebView2 != null) {
+                _ = ApplyPerformanceScriptAsync(BrowserWebView.CoreWebView2, UserPrefs.WebPerformanceMode);
+            }
+        }
+
+        private void SettingsTestAnimationBtn_Click(object sender, RoutedEventArgs e) {
+            if (AnimationHelper.AreAnimationsEnabled) {
+                ThemedMessageBox.Show("✨ Smooth physics & 60fps animations are ACTIVE!\n\nEvery page transition, button press, and dialog flows with fluid Ease-In/Out motion.", "Animation Test", MessageBoxButton.OK, MessageBoxImage.Information);
+            } else {
+                ThemedMessageBox.Show("⚡ Animations are currently turned OFF.\n\nAll views, buttons, and dialogs snap instantly with 0ms delay for maximum performance on any system.", "Animation Test", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void SettingsFindWorldsBtn_Click(object sender, RoutedEventArgs e) {
+            try {
+                var worlds = WorldBackupHelper.GetAllDetectedWorldsInfo();
+                var dirs = WorldBackupHelper.FindAllWorldsDirectories();
+
+                if (worlds.Count == 0) {
+                    ThemedMessageBox.Show("No Minecraft Bedrock worlds were found in your com.mojang directories.\n\nMake sure you have created or played a world at least once in Minecraft Bedrock.", "Find My Worlds", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"🔍 Found {worlds.Count} Minecraft Bedrock world(s) across {dirs.Count} location(s):\n");
+
+                int displayCount = Math.Min(worlds.Count, 8);
+                for (int i = 0; i < displayCount; i++) {
+                    var w = worlds[i];
+                    sb.AppendLine($"• {w.DisplayName} ({w.SizeFormatted}) - Last played: {w.LastModified:yyyy-MM-dd}");
+                }
+                if (worlds.Count > displayCount) {
+                    sb.AppendLine($"... and {worlds.Count - displayCount} more world(s).");
+                }
+
+                sb.AppendLine("\nPrimary Location:");
+                sb.AppendLine(dirs.FirstOrDefault() ?? "Unknown");
+                sb.AppendLine("\nWould you like to open your primary worlds folder in File Explorer?");
+
+                var result = ThemedMessageBox.Show(sb.ToString(), "Find My Worlds", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                if (result == MessageBoxResult.Yes) {
+                    WorldBackupHelper.OpenPrimaryWorldsFolder();
+                }
+            } catch (Exception ex) {
+                ThemedMessageBox.Show($"Error locating worlds: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -382,24 +494,47 @@ namespace BUGrockLauncher {
         private async void SettingsWebPerfCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) {
             if (SettingsWebPerfCombo?.SelectedItem is ComboBoxItem item && item.Tag != null) {
                 string oldMode = UserPrefs.WebPerformanceMode;
-                UserPrefs.WebPerformanceMode = item.Tag.ToString() ?? "High";
-                RewritePrefs();
-                ApplyWebPerformanceMode(UserPrefs.WebPerformanceMode);
+                string newMode = item.Tag.ToString() ?? "High";
+                UserPrefs.WebPerformanceMode = newMode;
 
-                if (ServersWebView?.CoreWebView2 != null) {
-                    await ApplyPerformanceScriptAsync(ServersWebView.CoreWebView2, UserPrefs.WebPerformanceMode);
-                    if (oldMode != UserPrefs.WebPerformanceMode) {
-                        ServersWebView.CoreWebView2.Reload();
+                if (newMode == "Low") {
+                    AnimationHelper.IsLowPerformanceMode = true;
+                    UserPrefs.SmoothAnimationsEnabled = false;
+                    AnimationHelper.AreAnimationsEnabled = false;
+                    if (SettingsSmoothAnimationsToggle != null) {
+                        SettingsSmoothAnimationsToggle.IsChecked = false;
+                        AnimationHelper.UpdatePillState(SettingsSmoothAnimationsToggle, animate: false);
+                    }
+                    ResetHeadToCenter(animated: false);
+                    SetServerCardHover(false);
+                } else {
+                    AnimationHelper.IsLowPerformanceMode = false;
+                    if (oldMode == "Low") {
+                        UserPrefs.SmoothAnimationsEnabled = true;
+                        AnimationHelper.AreAnimationsEnabled = true;
+                        if (SettingsSmoothAnimationsToggle != null) {
+                            SettingsSmoothAnimationsToggle.IsChecked = true;
+                            AnimationHelper.UpdatePillState(SettingsSmoothAnimationsToggle, animate: true);
+                        }
                     }
                 }
+
+                UpdateAnimationStatusUI();
+                RewritePrefs();
+                ApplyWebPerformanceMode(newMode);
+
+                if (ServersWebView?.CoreWebView2 != null) {
+                    await ApplyPerformanceScriptAsync(ServersWebView.CoreWebView2, newMode);
+                }
                 if (BrowserWebView?.CoreWebView2 != null) {
-                    await ApplyPerformanceScriptAsync(BrowserWebView.CoreWebView2, UserPrefs.WebPerformanceMode);
+                    await ApplyPerformanceScriptAsync(BrowserWebView.CoreWebView2, newMode);
                 }
             }
         }
 
         private void ApplyWebPerformanceMode(string mode) {
             try {
+                AnimationHelper.IsLowPerformanceMode = (mode == "Low");
                 var memTarget = (mode == "Low")
                     ? CoreWebView2MemoryUsageTargetLevel.Low
                     : CoreWebView2MemoryUsageTargetLevel.Normal;
@@ -407,28 +542,12 @@ namespace BUGrockLauncher {
                 if (ServersWebView?.CoreWebView2 != null) {
                     ServersWebView.CoreWebView2.MemoryUsageTargetLevel = memTarget;
                     _ = ApplyPerformanceScriptAsync(ServersWebView.CoreWebView2, mode);
-                    if (mode == "High") {
-                        _ = ClearWebViewCacheAsync(ServersWebView.CoreWebView2);
-                    }
                 }
                 if (BrowserWebView?.CoreWebView2 != null) {
                     BrowserWebView.CoreWebView2.MemoryUsageTargetLevel = memTarget;
                     _ = ApplyPerformanceScriptAsync(BrowserWebView.CoreWebView2, mode);
-                    if (mode == "High") {
-                        _ = ClearWebViewCacheAsync(BrowserWebView.CoreWebView2);
-                    }
                 }
-
-                if (mode == "Low") {
-                    _ = Task.Run(() => {
-                        try {
-                            GC.Collect(2, GCCollectionMode.Forced, true, true);
-                            GC.WaitForPendingFinalizers();
-                            NativeMemoryHelper.TrimWorkingSet();
-                        } catch { }
-                    });
-                }
-            } catch { }
+                            } catch { }
         }
 }
 }

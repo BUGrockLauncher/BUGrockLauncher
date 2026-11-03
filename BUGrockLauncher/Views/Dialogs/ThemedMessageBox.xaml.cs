@@ -16,6 +16,7 @@ namespace BUGrockLauncher {
 
 
             BUGrockLauncher.Helpers.ModalDialogHelper.AttachCenterLock(this);
+            BUGrockLauncher.Helpers.AnimationHelper.AnimateDialogIn(this);
 
 
 

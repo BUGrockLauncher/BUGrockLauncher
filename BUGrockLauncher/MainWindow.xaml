@@ -23,6 +23,7 @@
 
 
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        xmlns:helpers="clr-namespace:BUGrockLauncher.Helpers"
 
 
 
@@ -139,6 +140,7 @@
 
 
         <Style x:Key="TopNavTabStyle" TargetType="RadioButton">
+            <Setter Property="helpers:AnimationHelper.EnableInteractiveAnimations" Value="True"/>
 
 
 
@@ -259,6 +261,7 @@
 
 
         <Style x:Key="SubFilterTabStyle" TargetType="RadioButton">
+            <Setter Property="helpers:AnimationHelper.EnableInteractiveAnimations" Value="True"/>
 
 
 
@@ -399,145 +402,44 @@
 
 
         <Style x:Key="GiantPlayButtonStyle" TargetType="Button">
-
-
-
+            <Setter Property="helpers:AnimationHelper.EnableInteractiveAnimations" Value="True"/>
             <Setter Property="FontFamily" Value="{StaticResource FontEpilogue}"/>
-
-
-
             <Setter Property="Background" Value="#38A169"/>
-
-
-
             <Setter Property="Foreground" Value="#FFFFFF"/>
-
-
-
             <Setter Property="FontWeight" Value="Bold"/>
-
-
-
             <Setter Property="FontSize" Value="22"/>
-
-
-
             <Setter Property="Cursor" Value="Hand"/>
-
-
-
             <Setter Property="Padding" Value="18,6"/>
-
-
-
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-
-
-
             <Setter Property="Template">
-
-
-
                 <Setter.Value>
-
-
-
                     <ControlTemplate TargetType="Button">
-
-
-
-                        <Border x:Name="btnBorder" Background="{TemplateBinding Background}" BorderBrush="#276749" BorderThickness="0,0,0,3" CornerRadius="6" Padding="{TemplateBinding Padding}">
-
-
-
+                        <Border x:Name="btnBorder" Background="{TemplateBinding Background}" BorderBrush="#276749" BorderThickness="0,0,0,3" CornerRadius="6" Padding="{TemplateBinding Padding}" RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="PlayButtonScale" ScaleX="1.0" ScaleY="1.0"/>
+                            </Border.RenderTransform>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center">
-
-
-
                                 <ContentPresenter.Effect>
-
-
-
                                     <DropShadowEffect Color="#1E4E38" BlurRadius="2" ShadowDepth="2" Direction="270" Opacity="0.9"/>
-
-
-
                                 </ContentPresenter.Effect>
-
-
-
                             </ContentPresenter>
-
-
-
                         </Border>
-
-
-
                         <ControlTemplate.Triggers>
-
-
-
                             <Trigger Property="IsMouseOver" Value="True">
-
-
-
                                 <Setter TargetName="btnBorder" Property="Background" Value="#48BB78"/>
-
-
-
                             </Trigger>
-
-
-
                             <Trigger Property="IsPressed" Value="True">
-
-
-
                                 <Setter TargetName="btnBorder" Property="Background" Value="#276749"/>
-
-
-
                                 <Setter TargetName="btnBorder" Property="BorderThickness" Value="0,2,0,0"/>
-
-
-
                             </Trigger>
-
-
-
                             <Trigger Property="IsEnabled" Value="False">
-
-
-
                                 <Setter TargetName="btnBorder" Property="Background" Value="#232530"/>
-
-
-
                                 <Setter Property="Foreground" Value="#606478"/>
-
-
-
                             </Trigger>
-
-
-
                         </ControlTemplate.Triggers>
-
-
-
                     </ControlTemplate>
-
-
-
                 </Setter.Value>
-
-
-
             </Setter>
-
-
-
         </Style>
 
 
@@ -671,109 +573,40 @@
 
 
         <Style x:Key="DarkButtonStyle" TargetType="Button">
-
-
-
+            <Setter Property="helpers:AnimationHelper.EnableInteractiveAnimations" Value="True"/>
             <Setter Property="FontFamily" Value="{StaticResource FontEpilogue}"/>
-
-
-
             <Setter Property="Background" Value="#1C1E2A"/>
-
-
-
             <Setter Property="Foreground" Value="#FFFFFF"/>
-
-
-
             <Setter Property="FontWeight" Value="SemiBold"/>
-
-
-
             <Setter Property="FontSize" Value="12"/>
-
-
-
             <Setter Property="Cursor" Value="Hand"/>
-
-
-
             <Setter Property="Padding" Value="14,6"/>
-
-
-
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-
-
-
             <Setter Property="Template">
-
-
-
                 <Setter.Value>
-
-
-
                     <ControlTemplate TargetType="Button">
-
-
-
-                        <Border x:Name="btnBorder" Background="{TemplateBinding Background}" BorderBrush="#323548" BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
-
-
-
+                        <Border x:Name="btnBorder" Background="{TemplateBinding Background}" BorderBrush="#323548" BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}" RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="ButtonScale" ScaleX="1.0" ScaleY="1.0"/>
+                            </Border.RenderTransform>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-
-
-
                         </Border>
-
-
-
                         <ControlTemplate.Triggers>
-
-
-
                             <Trigger Property="IsMouseOver" Value="True">
-
-
-
-                                <Setter TargetName="btnBorder" Property="Background" Value="#282B3C"/>
-
-
-
+                                <Setter TargetName="btnBorder" Property="Background" Value="#2A2E42"/>
+                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#4F567A"/>
                             </Trigger>
-
-
-
                             <Trigger Property="IsPressed" Value="True">
-
-
-
                                 <Setter TargetName="btnBorder" Property="Background" Value="#161722"/>
-
-
-
                             </Trigger>
-
-
-
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.5"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
-
-
-
                     </ControlTemplate>
-
-
-
                 </Setter.Value>
-
-
-
             </Setter>
-
-
-
         </Style>
 
 
@@ -787,101 +620,37 @@
 
 
         <Style x:Key="DangerButtonStyle" TargetType="Button">
-
-
-
+            <Setter Property="helpers:AnimationHelper.EnableInteractiveAnimations" Value="True"/>
             <Setter Property="FontFamily" Value="{StaticResource FontEpilogue}"/>
-
-
-
             <Setter Property="Background" Value="#13141A"/>
-
-
-
             <Setter Property="Foreground" Value="#8E92A4"/>
-
-
-
             <Setter Property="FontWeight" Value="SemiBold"/>
-
-
-
             <Setter Property="FontSize" Value="12"/>
-
-
-
             <Setter Property="Cursor" Value="Hand"/>
-
-
-
             <Setter Property="Padding" Value="10,6"/>
-
-
-
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-
-
-
             <Setter Property="Template">
-
-
-
                 <Setter.Value>
-
-
-
                     <ControlTemplate TargetType="Button">
-
-
-
-                        <Border x:Name="btnBorder" Background="{TemplateBinding Background}" BorderBrush="#232530" BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
-
-
-
+                        <Border x:Name="btnBorder" Background="{TemplateBinding Background}" BorderBrush="#232530" BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}" RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="DangerButtonScale" ScaleX="1.0" ScaleY="1.0"/>
+                            </Border.RenderTransform>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-
-
-
                         </Border>
-
-
-
                         <ControlTemplate.Triggers>
-
-
-
                             <Trigger Property="IsMouseOver" Value="True">
-
-
-
                                 <Setter TargetName="btnBorder" Property="Background" Value="#3B1C1C"/>
-
-
-
                                 <Setter Property="Foreground" Value="#FF6B6B"/>
-
-
-
+                                <Setter TargetName="btnBorder" Property="BorderBrush" Value="#E53E3E"/>
                             </Trigger>
-
-
-
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="btnBorder" Property="Background" Value="#521B1B"/>
+                            </Trigger>
                         </ControlTemplate.Triggers>
-
-
-
                     </ControlTemplate>
-
-
-
                 </Setter.Value>
-
-
-
             </Setter>
-
-
-
         </Style>
 
 
@@ -1022,7 +791,7 @@
 
 
 
-            <Border Background="#1C1E2A" BorderBrush="#2D3042" BorderThickness="1" CornerRadius="8" Margin="0,0,0,10" Padding="16,14">
+            <Border Background="#1C1E2A" helpers:AnimationHelper.EnableCardHover="True" BorderBrush="#2D3042" BorderThickness="1" CornerRadius="8" Margin="6,3,6,10" Padding="16,14">
 
 
 
@@ -1162,7 +931,7 @@
 
 
 
-            <Border Background="#1C1E2A" BorderBrush="#38A169" BorderThickness="1.5" CornerRadius="8" Margin="0,0,0,10" Padding="16,14">
+            <Border Background="#1C1E2A" helpers:AnimationHelper.EnableCardHover="True" BorderBrush="#38A169" BorderThickness="1.5" CornerRadius="8" Margin="6,3,6,10" Padding="16,14">
 
 
 
@@ -1466,7 +1235,7 @@
 
 
 
-            <Border Background="#1C1E2A" BorderBrush="{Binding StateChangeInfo.StateAccentBrush}" BorderThickness="1.5" CornerRadius="8" Margin="0,0,0,10" Padding="16,14">
+            <Border Background="#1C1E2A" BorderBrush="{Binding StateChangeInfo.StateAccentBrush}" BorderThickness="1.5" CornerRadius="8" Margin="6,3,6,10" Padding="16,14">
 
 
 
@@ -1795,6 +1564,7 @@
 
 
             <Style x:Key="TopBarNavButtonStyle" TargetType="Button">
+            <Setter Property="helpers:AnimationHelper.EnableInteractiveAnimations" Value="True"/>
 
 
 
@@ -2279,185 +2049,53 @@
 
 
         <Style x:Key="ModernPillToggleStyle" TargetType="CheckBox">
-
-
-
+            <Setter Property="helpers:AnimationHelper.EnablePillAnimation" Value="True"/>
             <Setter Property="Width" Value="58"/>
-
-
-
             <Setter Property="Height" Value="26"/>
-
-
-
             <Setter Property="Cursor" Value="Hand"/>
-
-
-
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-
-
-
             <Setter Property="Template">
-
-
-
                 <Setter.Value>
-
-
-
                     <ControlTemplate TargetType="CheckBox">
-
-
-
-                        <Border x:Name="Track" Width="58" Height="26" CornerRadius="13" Background="#222433" BorderBrush="#32364A" BorderThickness="1.5">
-
-
-
+                        <Border x:Name="Track" Width="58" Height="26" CornerRadius="13" Background="#222433" BorderBrush="#32364A" BorderThickness="1.5" ClipToBounds="True">
                             <Grid>
-
-
-
                                 <!-- ON Label -->
-
-
-
                                 <TextBlock x:Name="OnLabel" Text="ON" Foreground="#FFFFFF" FontSize="9.5" FontWeight="Bold" FontFamily="{StaticResource FontEpilogue}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="8,0,0,0" Visibility="Collapsed"/>
-
-
-
                                 <!-- OFF Label -->
-
-
-
                                 <TextBlock x:Name="OffLabel" Text="OFF" Foreground="#858A9E" FontSize="9.5" FontWeight="Bold" FontFamily="{StaticResource FontEpilogue}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="Visible"/>
-
-
-
                                 <!-- Thumb -->
-
-
-
                                 <Border x:Name="Thumb" Width="18" Height="18" CornerRadius="9" Background="#FFFFFF" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0,0,0">
-
-
-
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="ThumbTranslate" X="0"/>
+                                    </Border.RenderTransform>
                                     <Border.Effect>
-
-
-
                                         <DropShadowEffect Color="#000000" BlurRadius="4" ShadowDepth="1" Opacity="0.3"/>
-
-
-
                                     </Border.Effect>
-
-
-
                                 </Border>
-
-
-
                             </Grid>
-
-
-
                         </Border>
-
-
-
                         <ControlTemplate.Triggers>
-
-
-
                             <Trigger Property="IsChecked" Value="True">
-
-
-
-                                <Setter TargetName="Track" Property="Background" Value="#D911AB"/>
-
-
-
-                                <Setter TargetName="Track" Property="BorderBrush" Value="#F012BE"/>
-
-
-
-                                <Setter TargetName="Thumb" Property="Margin" Value="34,0,0,0"/>
-
-
-
+                                <Setter TargetName="Track" Property="Background" Value="#10B981"/>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="#34D399"/>
                                 <Setter TargetName="OnLabel" Property="Visibility" Value="Visible"/>
-
-
-
                                 <Setter TargetName="OffLabel" Property="Visibility" Value="Collapsed"/>
-
-
-
                             </Trigger>
-
-
-
                             <Trigger Property="IsMouseOver" Value="True">
-
-
-
                                 <Setter TargetName="Track" Property="BorderBrush" Value="#8288A5"/>
-
-
-
                             </Trigger>
-
-
-
                             <MultiTrigger>
-
-
-
                                 <MultiTrigger.Conditions>
-
-
-
                                     <Condition Property="IsMouseOver" Value="True"/>
-
-
-
                                     <Condition Property="IsChecked" Value="True"/>
-
-
-
                                 </MultiTrigger.Conditions>
-
-
-
-                                <Setter TargetName="Track" Property="Background" Value="#F012BE"/>
-
-
-
-                                <Setter TargetName="Track" Property="BorderBrush" Value="#FF3BD5"/>
-
-
-
+                                <Setter TargetName="Track" Property="Background" Value="#059669"/>
+                                <Setter TargetName="Track" Property="BorderBrush" Value="#6EE7B7"/>
                             </MultiTrigger>
-
-
-
                         </ControlTemplate.Triggers>
-
-
-
                     </ControlTemplate>
-
-
-
                 </Setter.Value>
-
-
-
             </Setter>
-
-
-
         </Style>
 
 
@@ -2786,7 +2424,7 @@
 
 
 
-                        <StackPanel Margin="14,14,14,0">
+                        <StackPanel Margin="12,14,12,0" ClipToBounds="False">
 
 
 
@@ -2794,7 +2432,7 @@
 
 
 
-                            <Border Background="#1C1E2A" BorderBrush="#2D3042" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                            <Border helpers:AnimationHelper.EnableCardHover="True" Background="#1C1E2A" BorderBrush="#2D3042" BorderThickness="1" CornerRadius="8" Padding="12" Margin="2,2,2,10">
 
 
 
@@ -3148,6 +2786,8 @@
 
                             </Border>
 
+                            
+
 
 
                         </StackPanel>
@@ -3334,7 +2974,7 @@
 
 
 
-                    <Grid Grid.Row="0" Margin="16,14,16,8">
+                    <Grid x:Name="PlayHeroContainer" Grid.Row="0" Margin="16,14,16,8">
 
 
 
@@ -3350,7 +2990,7 @@
 
 
 
-                                <Image Source="Assets/launcher_hero.png" Stretch="UniformToFill" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                <Image Source="Assets/launcher_hero.png" CacheMode="BitmapCache" Stretch="UniformToFill" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
 
 
 
@@ -3430,7 +3070,7 @@
 
 
 
-                                       RenderOptions.BitmapScalingMode="HighQuality">
+                                       CacheMode="BitmapCache" RenderOptions.BitmapScalingMode="HighQuality">
 
 
 
@@ -3875,126 +3515,7 @@
 
 
                         <!-- Card 1: Addons & Textures Split Card (Left) -->
-
-
-
-                        <Border Grid.Column="0" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
-
-
-
-                            <Border.RenderTransform>
-
-
-
-                                <ScaleTransform ScaleX="1.0" ScaleY="1.0"/>
-
-
-
-                            </Border.RenderTransform>
-
-
-
-                            <Border.Style>
-
-
-
-                                <Style TargetType="Border">
-
-
-
-                                    <Style.Triggers>
-
-
-
-                                        <Trigger Property="IsMouseOver" Value="True">
-
-
-
-                                            <Setter Property="Panel.ZIndex" Value="10"/>
-
-
-
-                                            <Setter Property="BorderBrush" Value="#38A169"/>
-
-
-
-                                            <Trigger.EnterActions>
-
-
-
-                                                <BeginStoryboard>
-
-
-
-                                                    <Storyboard>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1.035" Duration="0:0:0.18"/>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1.035" Duration="0:0:0.18"/>
-
-
-
-                                                    </Storyboard>
-
-
-
-                                                </BeginStoryboard>
-
-
-
-                                            </Trigger.EnterActions>
-
-
-
-                                            <Trigger.ExitActions>
-
-
-
-                                                <BeginStoryboard>
-
-
-
-                                                    <Storyboard>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1.0" Duration="0:0:0.18"/>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1.0" Duration="0:0:0.18"/>
-
-
-
-                                                    </Storyboard>
-
-
-
-                                                </BeginStoryboard>
-
-
-
-                                            </Trigger.ExitActions>
-
-
-
-                                        </Trigger>
-
-
-
-                                    </Style.Triggers>
-
-
-
-                                </Style>
-
-
-
-                            </Border.Style>
+                        <Border Grid.Column="0" x:Name="CardModsAndTexturesBorder" helpers:AnimationHelper.EnableCardHover="True" Margin="4,3,2,4" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
 
 
 
@@ -4030,7 +3551,7 @@
 
 
 
-                                <Border Grid.Row="0" x:Name="CardModsSection" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardModsSection_Click">
+                                <Border Grid.Row="0" x:Name="CardModsSection" helpers:AnimationHelper.EnableInteractiveAnimations="True" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardModsSection_Click">
 
 
 
@@ -4158,7 +3679,7 @@
 
 
 
-                                <Border Grid.Row="2" x:Name="CardTexturesSection" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardTexturesSection_Click">
+                                <Border Grid.Row="2" x:Name="CardTexturesSection" helpers:AnimationHelper.EnableInteractiveAnimations="True" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardTexturesSection_Click">
 
 
 
@@ -4279,126 +3800,7 @@
 
 
                         <!-- Card 2: Featured Bedrock Servers (Center - Live Web View) -->
-
-
-
-                        <Border Grid.Column="2" x:Name="ServerCardBorder" Background="#151720" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
-
-
-
-                            <Border.RenderTransform>
-
-
-
-                                <ScaleTransform ScaleX="1.0" ScaleY="1.0"/>
-
-
-
-                            </Border.RenderTransform>
-
-
-
-                            <Border.Style>
-
-
-
-                                <Style TargetType="Border">
-
-
-
-                                    <Style.Triggers>
-
-
-
-                                        <Trigger Property="IsMouseOver" Value="True">
-
-
-
-                                            <Setter Property="Panel.ZIndex" Value="10"/>
-
-
-
-                                            <Setter Property="BorderBrush" Value="#38A169"/>
-
-
-
-                                            <Trigger.EnterActions>
-
-
-
-                                                <BeginStoryboard>
-
-
-
-                                                    <Storyboard>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1.025" Duration="0:0:0.18"/>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1.025" Duration="0:0:0.18"/>
-
-
-
-                                                    </Storyboard>
-
-
-
-                                                </BeginStoryboard>
-
-
-
-                                            </Trigger.EnterActions>
-
-
-
-                                            <Trigger.ExitActions>
-
-
-
-                                                <BeginStoryboard>
-
-
-
-                                                    <Storyboard>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1.0" Duration="0:0:0.18"/>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1.0" Duration="0:0:0.18"/>
-
-
-
-                                                    </Storyboard>
-
-
-
-                                                </BeginStoryboard>
-
-
-
-                                            </Trigger.ExitActions>
-
-
-
-                                        </Trigger>
-
-
-
-                                    </Style.Triggers>
-
-
-
-                                </Style>
-
-
-
-                            </Border.Style>
+                        <Border Grid.Column="2" x:Name="ServerCardBorder" Margin="2,3,2,4" Background="#151720" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
 
 
 
@@ -4426,7 +3828,7 @@
 
 
 
-                                <Border Grid.Row="0" Background="#12131A" BorderBrush="#222430" BorderThickness="0,0,0,1" Padding="10,0">
+                                <Border Grid.Row="0" x:Name="ServerCardHeader" Background="#12131A" BorderBrush="#222430" BorderThickness="0,0,0,1" Padding="10,0">
 
 
 
@@ -4490,35 +3892,7 @@
 
 
 
-                                <!-- ===================================================================================================================
-
-
-
-                                     CRITICAL ARCHITECTURAL WARNING - DO NOT TOUCH OR MODIFY!
-
-
-
-                                     # STRICTLY FORBIDDEN FOR ANY AI AGENT OR DEVELOPER TO MODIFY, TOUCH, REFACTOR, OR ALTER THIS COMPONENT!
-
-
-
-                                     This section (ServersLoadingOverlay, ServersWebView airspace positioning, and cube loading animation)
-
-
-
-                                     was meticulously engineered and fine-tuned to eliminate all WebView2 airspace glitches, white flashes,
-
-
-
-                                     and video layout jumps. NO ONE KNOWS EXACTLY HOW ALL THE PIECES BALANCE TOGETHER, BUT IT WORKS FLAWLESSLY.
-
-
-
-                                     LEAVE IT EXACTLY AS-IS!
-
-
-
-                                     =================================================================================================================== -->
+                                <!-- Live Server WebView2 -->
 
 
 
@@ -4795,126 +4169,7 @@
 
 
                         <!-- Card 3: Maps & Skins Split Card (Right) -->
-
-
-
-                        <Border Grid.Column="4" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
-
-
-
-                            <Border.RenderTransform>
-
-
-
-                                <ScaleTransform ScaleX="1.0" ScaleY="1.0"/>
-
-
-
-                            </Border.RenderTransform>
-
-
-
-                            <Border.Style>
-
-
-
-                                <Style TargetType="Border">
-
-
-
-                                    <Style.Triggers>
-
-
-
-                                        <Trigger Property="IsMouseOver" Value="True">
-
-
-
-                                            <Setter Property="Panel.ZIndex" Value="10"/>
-
-
-
-                                            <Setter Property="BorderBrush" Value="#38A169"/>
-
-
-
-                                            <Trigger.EnterActions>
-
-
-
-                                                <BeginStoryboard>
-
-
-
-                                                    <Storyboard>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1.035" Duration="0:0:0.18"/>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1.035" Duration="0:0:0.18"/>
-
-
-
-                                                    </Storyboard>
-
-
-
-                                                </BeginStoryboard>
-
-
-
-                                            </Trigger.EnterActions>
-
-
-
-                                            <Trigger.ExitActions>
-
-
-
-                                                <BeginStoryboard>
-
-
-
-                                                    <Storyboard>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1.0" Duration="0:0:0.18"/>
-
-
-
-                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1.0" Duration="0:0:0.18"/>
-
-
-
-                                                    </Storyboard>
-
-
-
-                                                </BeginStoryboard>
-
-
-
-                                            </Trigger.ExitActions>
-
-
-
-                                        </Trigger>
-
-
-
-                                    </Style.Triggers>
-
-
-
-                                </Style>
-
-
-
-                            </Border.Style>
+                        <Border Grid.Column="4" x:Name="CardMapsAndSkinsBorder" helpers:AnimationHelper.EnableCardHover="True" Margin="2,3,4,4" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
 
 
 
@@ -4950,7 +4205,7 @@
 
 
 
-                                <Border Grid.Row="0" x:Name="CardMapsSection" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardMapsSection_Click">
+                                <Border Grid.Row="0" x:Name="CardMapsSection" helpers:AnimationHelper.EnableInteractiveAnimations="True" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardMapsSection_Click">
 
 
 
@@ -5078,7 +4333,7 @@
 
 
 
-                                <Border Grid.Row="2" x:Name="CardSkinsSection" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardSkinsSection_Click">
+                                <Border Grid.Row="2" x:Name="CardSkinsSection" helpers:AnimationHelper.EnableInteractiveAnimations="True" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardSkinsSection_Click">
 
 
 
@@ -9938,11 +9193,8 @@
 
 
 
-                    <ScrollViewer Grid.Row="1" x:Name="SettingsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="24,18">
-
-
-
-                        <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+                    <ScrollViewer Grid.Row="1" x:Name="SettingsScrollViewer" VerticalScrollBarVisibility="Auto" Padding="0">
+                        <StackPanel Margin="24,18,24,24" HorizontalAlignment="Stretch" ClipToBounds="False">
 
 
 
@@ -9954,7 +9206,7 @@
 
 
 
-                            <Border x:Name="CardWebPerf" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="0,0,0,14">
+                            <Border x:Name="CardWebPerf" helpers:AnimationHelper.EnableCardHover="True" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="6,3,6,14">
 
 
 
@@ -10094,7 +9346,7 @@
 
 
 
-                            <Border x:Name="CardFpsUnlocker" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="0,0,0,14">
+                            <Border x:Name="CardFpsUnlocker" helpers:AnimationHelper.EnableCardHover="True" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="6,3,6,14">
 
 
 
@@ -10334,11 +9586,42 @@
 
 
 
+                            <!-- CARD 1.5: Smooth Animations & UI Transitions -->
+                            <Border x:Name="CardSmoothAnimations" helpers:AnimationHelper.EnableCardHover="True" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="6,3,6,14">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                <Border Width="24" Height="24" Background="#1C2E24" BorderBrush="#38A169" BorderThickness="1" CornerRadius="5" Margin="0,0,10,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="✨" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Text="SMOOTH UI ANIMATIONS &amp; TRANSITIONS" Foreground="#FFFFFF" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <TextBlock Text="Enables fluid page slide transitions with easing curves, button press physics, and micro-interactions. Turn OFF for instant 0ms snap mode." Foreground="#8E92A4" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" x:Name="SettingsSmoothAnimationsToggle" Click="SettingsSmoothAnimationsToggle_Click" Style="{StaticResource ModernPillToggleStyle}" VerticalAlignment="Center" Margin="16,0,0,0" ToolTip="Toggle all smooth UI transitions and button animations"/>
+                                    </Grid>
+
+                                    <Border Height="1" Background="#232636" Margin="0,14,0,12"/>
+
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button x:Name="SettingsTestAnimationBtn" Content="🎮 Test Animation Physics" Click="SettingsTestAnimationBtn_Click" Style="{StaticResource DarkButtonStyle}" Height="30" Padding="14,0" FontSize="11" Margin="0,0,12,0" ToolTip="Click to test fluid button scale and physics"/>
+                                        <Border x:Name="SettingsAnimStatusBadge" Background="#1C2E24" BorderBrush="#38A169" BorderThickness="1" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
+                                            <TextBlock x:Name="SettingsAnimStatusLabel" Text="Smooth 60fps Animations: ACTIVE" Foreground="#38A169" FontSize="10.5" FontWeight="Bold"/>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
                             <!-- CARD 2: World Auto-Backup & Safety -->
 
 
 
-                            <Border x:Name="CardWorldBackup" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="0,0,0,14">
+                            <Border x:Name="CardWorldBackup" helpers:AnimationHelper.EnableCardHover="True" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="6,3,6,14">
 
 
 
@@ -10482,7 +9765,7 @@
 
                                         <Button x:Name="SettingsBackupWorldsNowBtn" Content="💾 Backup All Worlds Now" Click="SettingsBackupWorldsNowBtn_Click" Style="{StaticResource DarkButtonStyle}" Height="30" Padding="14,0" FontSize="11" Margin="0,0,8,0"/>
 
-                                        <Button x:Name="SettingsFindWorldsBtn" Content="🔍 Find My Worlds" Click="MenuItemFindMyDataClicked" Style="{StaticResource DarkButtonStyle}" Height="30" Padding="14,0" FontSize="11" Margin="0,0,8,0"/>
+                                        <Button x:Name="SettingsFindWorldsBtn" Content="🔍 Find My Worlds" Click="SettingsFindWorldsBtn_Click" Style="{StaticResource DarkButtonStyle}" Height="30" Padding="14,0" FontSize="11" Margin="0,0,8,0"/>
 
                                         <Button x:Name="SettingsOpenBackupsFolderBtn" Content="📁 Open Backups Folder" Click="SettingsOpenBackupsFolderBtn_Click" Style="{StaticResource DarkButtonStyle}" Height="30" Padding="14,0" FontSize="11"/>
 
@@ -10506,7 +9789,7 @@
 
 
 
-                            <Border x:Name="CardDiscordRpc" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="0,0,0,14">
+                            <Border x:Name="CardDiscordRpc" helpers:AnimationHelper.EnableCardHover="True" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="6,3,6,14">
 
 
 
@@ -10658,7 +9941,7 @@
 
 
 
-                            <Border x:Name="CardPreferences" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="0,0,0,14">
+                            <Border x:Name="CardPreferences" helpers:AnimationHelper.EnableCardHover="True" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="6,3,6,14">
 
 
 
@@ -10826,7 +10109,7 @@
 
 
 
-                            <Border x:Name="CardSystemTools" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="0,0,0,14">
+                            <Border x:Name="CardSystemTools" helpers:AnimationHelper.EnableCardHover="True" Background="#161822" BorderBrush="#292D3E" BorderThickness="1" CornerRadius="8" Padding="18" Margin="6,3,6,14">
 
 
 

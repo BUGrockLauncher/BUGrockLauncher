@@ -263,6 +263,22 @@ namespace BUGrockLauncher {
                     window.addEventListener('mouseenter', function() {
                         try { window.chrome.webview.postMessage('browser_mouseenter'); } catch(e) {}
                     });
+                    window.addEventListener('mouseleave', function() {
+                        try { window.chrome.webview.postMessage('browser_mouseleave'); } catch(e) {}
+                    });
+
+                    // Smooth transition on page link / pagination click
+                    document.addEventListener('click', function(e) {
+                        var a = e.target.closest('a');
+                        if (a && a.href && a.href.indexOf('minecraftpocket-servers.com') !== -1 && !a.href.startsWith('minecraft:')) {
+                            try {
+                                if (document.body) {
+                                    document.body.style.transition = 'opacity 0.12s ease';
+                                    document.body.style.opacity = '0.4';
+                                }
+                            } catch(err) {}
+                        }
+                    }, true);
                     window.addEventListener('mousemove', function() {
                         try { window.chrome.webview.postMessage('browser_mouseenter'); } catch(e) {}
                     }, { passive: true, once: true });

@@ -451,133 +451,138 @@ namespace BUGrockLauncher {
 
 
         public static string GetPerformanceScript(string mode) {
+            bool animActive = AnimationHelper.IsActive && mode != "Low";
+            string animCss = animActive
+                ? @"
+                    .servers-table tbody tr, .server-card, .card {
+                        transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease !important;
+                    }
+                    .servers-table tbody tr:hover, .server-card:hover {
+                        transform: translateY(-2px) scale(1.006) !important;
+                        border-color: #38A169 !important;
+                        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45) !important;
+                    }
+                    .btn, button, a.btn, .page-link {
+                        transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.12s ease, border-color 0.12s ease !important;
+                    }
+                    .btn:hover, button:hover, a.btn:hover, .page-link:hover {
+                        transform: scale(1.03) !important;
+                    }
+                    .btn:active, button:active, a.btn:active, .page-link:active {
+                        transform: scale(0.96) !important;
+                    }
+                "
+                : @"
+                    *, *::before, *::after {
+                        animation: none !important;
+                        transition: none !important;
+                        scroll-behavior: auto !important;
+                    }
+                ";
 
             string css;
-
             if (mode == "Low") {
-
                 css = @"
-
-                    img[src*='.gif'], img[src*='banner'], .server-banner img, .server-banner-wrap img, .server-banner, .server-banner-wrap {
-
+                    img[src*='.gif'], img[src*='banner'], .server-banner img, .server-banner-wrap img, .server-banner, .server-banner-wrap,
+                    .server-banner-wrap video, .server-banner video, video.mp4-fluid, video[src*='banner'] {
                         display: none !important;
-
                         visibility: hidden !important;
-
                         height: 0 !important;
-
                         width: 0 !important;
-
                     }
-
-                    *, *::before, *::after {
-
-                        animation: none !important;
-
-                        transition: none !important;
-
-                        scroll-behavior: auto !important;
-
-                    }
-
-                ";
-
+                " + animCss;
             } else if (mode == "Medium") {
-
                 css = @"
-
                     .server-banner-wrap video, .server-banner video, video.mp4-fluid, video[src*='banner'],
-
                     .server-banner-wrap img, .server-banner img, .card img, img.server-banner,
-
                     img[src*='banner'], img[src*='.gif'] {
-
                         display: block !important;
-
                         visibility: visible !important;
-
                         opacity: 1 !important;
-
                         max-width: 100% !important;
-
                         height: auto !important;
-
                     }
-
-                ";
-
-            } else { // High - Lightning Fast Rocket Rendering
-
+                " + animCss;
+            } else { // High
                 css = @"
-
                     .server-banner-wrap video, .server-banner video, video.mp4-fluid, video[src*='banner'],
-
                     .server-banner-wrap img, .server-banner img, .card img, img.server-banner,
-
                     img[src*='banner'], img[src*='.gif'] {
-
                         display: block !important;
-
                         visibility: visible !important;
-
                         opacity: 1 !important;
-
                         max-width: 100% !important;
-
                         height: auto !important;
-
                         transform: translateZ(0) !important;
-
                         will-change: transform !important;
-
                         backface-visibility: hidden !important;
-
                         image-rendering: -webkit-optimize-contrast !important;
-
                     }
-
                     .card, .server-card, .list-group-item {
-
                         contain: content !important;
-
                         transform: translateZ(0) !important;
-
                     }
-
                     * {
-
                         -webkit-font-smoothing: antialiased !important;
-
                     }
-
-                ";
-
+                " + animCss;
             }
 
-
-
+            string isLowJs = (mode == "Low") ? "true" : "false";
             return $@"(function() {{
-
                 try {{
-
                     var s = document.getElementById('bugrock-perf-style');
-
                     if (!s) {{
-
                         s = document.createElement('style');
-
                         s.id = 'bugrock-perf-style';
-
                         (document.head || document.documentElement).appendChild(s);
-
                     }}
-
                     s.innerHTML = `{css}`;
-
+                    var vids = document.querySelectorAll('video');
+                    for (var i = 0; i < vids.length; i++) {{
+                        try {{
+                            if ({isLowJs}) vids[i].pause();
+                            else if (vids[i].paused) vids[i].play().catch(function(){{}});
+                        }} catch(ve) {{}}
+                    }}
                 }} catch(e) {{}}
-
             }})();";
+        }
 
+        public void SetServerCardHover(bool isHovered) {
+            if (ServerCardBorder == null) return;
+            try {
+                // Only modify BorderBrush; NEVER animate Margin so Win32 HwndHost position stays completely stable!
+                ServerCardBorder.BorderBrush = isHovered && AnimationHelper.IsActive
+                    ? new SolidColorBrush(Color.FromRgb(0x38, 0xA1, 0x69))
+                    : new SolidColorBrush(Color.FromRgb(0x25, 0x27, 0x36));
+            } catch { }
+        }
+
+        public void AnimateServersWebViewIn() {
+            if (!AnimationHelper.IsActive || !_serversRevealed || ServersWebView?.CoreWebView2 == null) return;
+            try {
+                _ = ServersWebView.CoreWebView2.ExecuteScriptAsync(@"
+                    (function() {
+                        try {
+                            var b = document.body;
+                            if (!b) return;
+                            b.style.transition = 'none';
+                            b.style.opacity = '1';
+                            if (b.animate) {
+                                b.animate([
+                                    { opacity: 0.1, transform: 'translateY(12px)' },
+                                    { opacity: 1, transform: 'translateY(0px)' }
+                                ], {
+                                    duration: 200,
+                                    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                                    fill: 'both'
+                                });
+                            }
+                        } catch(e) {}
+                    })();
+                ");
+            } catch { }
         }
 
 
@@ -658,7 +663,19 @@ namespace BUGrockLauncher {
 
 
 
-                    ServersWebView.MouseEnter += (s, e) => ResetHeadToCenter(animated: true);
+                    if (ServerCardBorder != null) {
+                        ServerCardBorder.MouseEnter += (s, e) => SetServerCardHover(true);
+                        ServerCardBorder.MouseLeave += (s, e) => {
+                            if (ServersWebView == null || !ServersWebView.IsMouseOver) SetServerCardHover(false);
+                        };
+                    }
+                    ServersWebView.MouseEnter += (s, e) => {
+                        ResetHeadToCenter(animated: true);
+                        SetServerCardHover(true);
+                    };
+                    ServersWebView.MouseLeave += (s, e) => {
+                        if (ServerCardBorder == null || !ServerCardBorder.IsMouseOver) SetServerCardHover(false);
+                    };
 
 
 
@@ -777,6 +794,16 @@ namespace BUGrockLauncher {
 
 
                                 string msg = e.TryGetWebMessageAsString();
+                                if (msg == "browser_mouseenter") {
+                                    Dispatcher.InvokeAsync(() => SetServerCardHover(true));
+                                    return;
+                                }
+                                if (msg == "browser_mouseleave") {
+                                    Dispatcher.InvokeAsync(() => {
+                                        if (ServerCardBorder == null || !ServerCardBorder.IsMouseOver) SetServerCardHover(false);
+                                    });
+                                    return;
+                                }
 
 
 
@@ -881,19 +908,24 @@ namespace BUGrockLauncher {
 
 
                             if (navUri.Contains("minecraftpocket-servers.com") || navUri.Contains("cloudflare.com")) {
-
-                                Dispatcher.Invoke(() => {
-
-                                    ParkServersWebViewForLoading();
-
-                                });
-
-
-
+                                if (!_isServersFirstLoadCompleted) {
+                                    Dispatcher.Invoke(() => {
+                                        ParkServersWebViewForLoading();
+                                    });
+                                } else {
+                                    // Subsequent in-page navigation (e.g. flipping page 1 -> 2 -> 3): keep WebView2 at Margin=0!
+                                    if (AnimationHelper.IsActive) {
+                                        _ = ServersWebView.CoreWebView2?.ExecuteScriptAsync(@"
+                                            try {
+                                                if (document.body) {
+                                                    document.body.style.transition = 'opacity 0.12s ease';
+                                                    document.body.style.opacity = '0.4';
+                                                }
+                                            } catch(e) {}
+                                        ");
+                                    }
+                                }
                                 return;
-
-
-
                             }
 
 
@@ -1015,13 +1047,12 @@ namespace BUGrockLauncher {
 
 
                                     try {
-
                                         ServersWebView.CoreWebView2?.ExecuteScriptAsync(ANTI_COOKIE_AND_POPUP_SCRIPT);
-
                                         ServersWebView.CoreWebView2?.ExecuteScriptAsync(SERVERS_VIEW_POLISH_SCRIPT);
-
                                         _ = ApplyPerformanceScriptAsync(ServersWebView.CoreWebView2, UserPrefs.WebPerformanceMode);
-
+                                        if (_isServersFirstLoadCompleted && _serversRevealed && AnimationHelper.IsActive) {
+                                            AnimateServersWebViewIn();
+                                        }
                                     } catch { }
 
 
@@ -1122,21 +1153,7 @@ namespace BUGrockLauncher {
 
 
 
-        /* ===================================================================================================================
-
-           CRITICAL ARCHITECTURAL WARNING - DO NOT TOUCH OR MODIFY!
-
-           # STRICTLY FORBIDDEN FOR ANY AI AGENT OR DEVELOPER TO MODIFY, TOUCH, REFACTOR, OR ALTER THIS LOGIC!
-
-           This component (ServersLoadingOverlay, off-screen airspace parking, and frame synchronization)
-
-           was meticulously engineered and fine-tuned to eliminate all WebView2 airspace glitches, white flashes,
-
-           and video layout jumps. NO ONE KNOWS EXACTLY HOW ALL THE PIECES BALANCE TOGETHER, BUT IT WORKS FLAWLESSLY.
-
-           LEAVE IT EXACTLY AS-IS!
-
-           =================================================================================================================== */
+        // Live Server WebView2 state
 
         private bool _serversRevealed = false;
 
@@ -1359,19 +1376,16 @@ namespace BUGrockLauncher {
                 // 5. Seamlessly reveal the fully rendered servers card
 
                 Dispatcher.Invoke(() => {
-
+                    bool isPlayVisible = (PlayViewGrid != null && PlayViewGrid.Visibility == Visibility.Visible);
                     if (ServersWebView != null) {
-
                         ServersWebView.Margin = new Thickness(0);
-
-                        ServersWebView.Visibility = Visibility.Visible;
-
+                        ServersWebView.Visibility = isPlayVisible ? Visibility.Visible : Visibility.Collapsed;
                     }
-
                     if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
-
                     if (ServersNoInternetOverlay != null) ServersNoInternetOverlay.Visibility = Visibility.Collapsed;
-
+                    if (isPlayVisible && AnimationHelper.IsActive) {
+                        AnimateServersWebViewIn();
+                    }
                 });
 
             } catch {
