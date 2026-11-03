@@ -21,6 +21,13 @@ namespace BUGrockLauncher {
 
         private void OnHeadRenderFrame(object? sender, EventArgs e) {
             if (SteveHeadRotationYaw == null || SteveHeadRotationPitch == null) return;
+            if (!BUGrockLauncher.Helpers.AnimationHelper.IsActive) {
+                if (SteveHeadRotationYaw.Angle != 0) SteveHeadRotationYaw.Angle = 0;
+                if (SteveHeadRotationPitch.Angle != 0) SteveHeadRotationPitch.Angle = 0;
+                _targetYaw = 0;
+                _targetPitch = 0;
+                return;
+            }
 
             double curYaw = SteveHeadRotationYaw.Angle;
             double curPitch = SteveHeadRotationPitch.Angle;
@@ -43,7 +50,7 @@ namespace BUGrockLauncher {
         public void ResetHeadToCenter(bool animated = true) {
             _targetYaw = 0;
             _targetPitch = 0;
-            if (!animated) {
+            if (!animated || !BUGrockLauncher.Helpers.AnimationHelper.IsActive) {
                 if (SteveHeadRotationYaw != null) SteveHeadRotationYaw.Angle = 0;
                 if (SteveHeadRotationPitch != null) SteveHeadRotationPitch.Angle = 0;
             }
@@ -54,6 +61,7 @@ namespace BUGrockLauncher {
         }
 
         private void Window_MouseMove(object sender, MouseEventArgs e) {
+            if (!BUGrockLauncher.Helpers.AnimationHelper.IsActive) return;
             if (VersionSelectorPopup != null && VersionSelectorPopup.IsOpen) return;
             if (SteveHeadRotationYaw == null || SteveHeadRotationPitch == null || HeadViewport == null) return;
 

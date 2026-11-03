@@ -128,6 +128,11 @@ namespace BUGrockLauncher {
 
 
 
+            AnimationHelper.IsLowPerformanceMode = (UserPrefs.WebPerformanceMode == "Low");
+            if (AnimationHelper.IsLowPerformanceMode) {
+                UserPrefs.SmoothAnimationsEnabled = false;
+            }
+            AnimationHelper.AreAnimationsEnabled = UserPrefs.SmoothAnimationsEnabled;
             InitializeComponent();
 
             if (Application.Current != null) { Application.Current.MainWindow = this; }
@@ -265,6 +270,7 @@ namespace BUGrockLauncher {
 
                 UpdateQuickPlayStatus();
 
+                
                 if (VersionTabs != null && AllTab != null) VersionTabs.SelectedItem = AllTab;
 
                 _ = LoadVersionListAsync();
@@ -593,6 +599,8 @@ namespace BUGrockLauncher {
 
 
 
+        private FrameworkElement? _currentVisibleView = null;
+
         private void TabNav_Checked(object sender, RoutedEventArgs e) {
             if (PlayViewGrid == null || InstallationsViewGrid == null) return;
             bool isPlay = (TabNavPlay?.IsChecked == true);
@@ -601,61 +609,83 @@ namespace BUGrockLauncher {
             bool isSettings = (TabNavSettings?.IsChecked == true);
             bool isBrowserOpen = (InAppBrowserOverlay != null && InAppBrowserOverlay.Visibility == Visibility.Visible);
 
-            PlayViewGrid.Visibility = (isPlay && !isBrowserOpen && !isAddons && !isSettings) ? Visibility.Visible : Visibility.Collapsed;
+            FrameworkElement? targetView = null;
+            if (isPlay && !isBrowserOpen && !isAddons && !isSettings) targetView = PlayViewGrid;
+            else if (isInstallations && !isBrowserOpen && !isAddons && !isSettings) targetView = InstallationsViewGrid;
+            else if (isAddons && !isBrowserOpen && !isSettings) targetView = AddonsManagerViewGrid;
+            else if (isSettings && !isBrowserOpen) targetView = SettingsViewGrid;
+
+            PlayViewGrid.Visibility = (targetView == PlayViewGrid) ? Visibility.Visible : Visibility.Collapsed;
             if (ServerCardBorder != null) ServerCardBorder.Visibility = (isPlay && !isBrowserOpen && !isAddons && !isSettings) ? Visibility.Visible : Visibility.Collapsed;
             if (ServersWebView != null) {
                 bool shouldShowServers = (isPlay && !isBrowserOpen && !isAddons && !isSettings);
                 ServersWebView.Visibility = shouldShowServers ? Visibility.Visible : Visibility.Collapsed;
+                if (!shouldShowServers) {
+                    ServersWebView.Margin = new Thickness(-20000, 0, 20000, 0);
+                    try {
+                        ServersWebView.CoreWebView2?.Suspend();
+                    } catch { }
+                }
                 try {
                     if (ServersWebView.CoreWebView2 != null) {
                         if (shouldShowServers) {
-                            if (UserPrefs.WebPerformanceMode == "High" && _serversRevealed) {
-                                // High Performance Mode: Simply unfreeze in place instantly!
+                            if (_serversRevealed) {
                                 ServersWebView.Margin = new Thickness(0);
                                 ServersWebView.Visibility = Visibility.Visible;
                                 if (ServersLoadingOverlay != null) ServersLoadingOverlay.Visibility = Visibility.Collapsed;
-                                try {
-                                    ServersWebView.CoreWebView2?.Resume();
-                                    ServersWebView.CoreWebView2.MemoryUsageTargetLevel = Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Normal;
-                                } catch { }
-                            } else {
+                            }
+                            try {
                                 ServersWebView.CoreWebView2.Resume();
                                 ServersWebView.CoreWebView2.MemoryUsageTargetLevel = (UserPrefs.WebPerformanceMode == "Low")
                                     ? Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Low
                                     : Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Normal;
-                                if (!_serversInitialNavStarted && (string.IsNullOrEmpty(ServersWebView.Source?.ToString()) || ServersWebView.Source.ToString() == "about:blank")) {
-                                    _serversInitialNavStarted = true;
-                                    ServersWebView.CoreWebView2.Navigate(AppConfig.ServersHubUrl);
-                                }
+                            } catch { }
+                            if (!_serversInitialNavStarted && (string.IsNullOrEmpty(ServersWebView.Source?.ToString()) || ServersWebView.Source.ToString() == "about:blank")) {
+                                _serversInitialNavStarted = true;
+                                ServersWebView.CoreWebView2.Navigate(AppConfig.ServersHubUrl);
                             }
                         } else {
-                            if (UserPrefs.WebPerformanceMode == "Low") {
-                                _ = ServersWebView.CoreWebView2.TrySuspendAsync();
-                                ServersWebView.CoreWebView2.MemoryUsageTargetLevel = Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Low;
-                                _ = ClearWebViewCacheAsync(ServersWebView.CoreWebView2);
-                            } else if (UserPrefs.WebPerformanceMode == "Balanced") {
-                                _ = ServersWebView.CoreWebView2.TrySuspendAsync();
-                                ServersWebView.CoreWebView2.MemoryUsageTargetLevel = Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Low;
-                            }
-                            // In "High" performance mode: keep ServersWebView cached in memory without wiping!
+                            SetServerCardHover(false);
                         }
                     }
                 } catch { }
             }
 
-            InstallationsViewGrid.Visibility = (isInstallations && !isBrowserOpen && !isAddons && !isSettings) ? Visibility.Visible : Visibility.Collapsed;
+            InstallationsViewGrid.Visibility = (targetView == InstallationsViewGrid) ? Visibility.Visible : Visibility.Collapsed;
 
             if (AddonsManagerViewGrid != null) {
-                AddonsManagerViewGrid.Visibility = (isAddons && !isBrowserOpen && !isSettings) ? Visibility.Visible : Visibility.Collapsed;
-                if (isAddons && !isBrowserOpen && !isSettings) {
+                AddonsManagerViewGrid.Visibility = (targetView == AddonsManagerViewGrid) ? Visibility.Visible : Visibility.Collapsed;
+                if (targetView == AddonsManagerViewGrid) {
                     LoadAddonsManagerData();
                 }
             }
 
             if (SettingsViewGrid != null) {
-                SettingsViewGrid.Visibility = (isSettings && !isBrowserOpen) ? Visibility.Visible : Visibility.Collapsed;
-                if (isSettings && !isBrowserOpen) {
+                SettingsViewGrid.Visibility = (targetView == SettingsViewGrid) ? Visibility.Visible : Visibility.Collapsed;
+                if (targetView == SettingsViewGrid) {
                     LoadSettingsPageData();
+                }
+            }
+
+            if (targetView != null && targetView != _currentVisibleView) {
+                _currentVisibleView = targetView;
+                if (targetView == PlayViewGrid) {
+                    // Do NOT apply TranslateTransform on PlayViewGrid itself to prevent Win32 HwndHost (WebView2) airspace desync!
+                    PlayViewGrid.RenderTransform = null;
+                    PlayViewGrid.Opacity = 1.0;
+                    if (AnimationHelper.IsActive) {
+                        AnimationHelper.AnimatePageIn(PlayHeroContainer, fromOffsetY: 10, durationMs: 180);
+                        AnimationHelper.AnimatePageIn(CardModsAndTexturesBorder, fromOffsetY: 10, durationMs: 180);
+                        AnimationHelper.AnimatePageIn(CardMapsAndSkinsBorder, fromOffsetY: 10, durationMs: 180);
+                        if (ServerCardHeader != null) {
+                            AnimationHelper.AnimateFadeIn(ServerCardHeader, durationMs: 180);
+                        }
+                        if (_serversRevealed) {
+                            AnimateServersWebViewIn();
+                        }
+                    }
+                } else {
+                    AnimationHelper.AnimatePageIn(targetView);
                 }
             }
         }

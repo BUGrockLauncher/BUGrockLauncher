@@ -11,6 +11,8 @@ namespace BUGrockLauncher {
 
         public string WebPerformanceMode { get; set; } = "High";
 
+        public bool SmoothAnimationsEnabled { get; set; } = true;
+
         public bool FpsUnlockerEnabled { get; set; } = false;
 
         public int MaxFramerate { get; set; } = 0; // 0 = Unlimited

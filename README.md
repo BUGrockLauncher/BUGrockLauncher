@@ -131,16 +131,12 @@ dotnet publish BUGrockLauncher/BUGrockLauncher.csproj -c Release -r win-x64 --se
 
 **BUGrock Launcher** is free and open-source software licensed under the **GNU General Public License v3.0 (GPL-3.0)** — see the [LICENSE.txt](LICENSE.txt) file for the full license text.
 
-### Attribution & Modification Notice (GPL-3.0 § 5)
-- **Original Project**: Based on [`mc-w10-version-launcher`](https://github.com/MCMrARM/mc-w10-version-launcher) by **MCMrARM** and contributors, and the updated fork [`dktapps-pm-pl/mc-w10-version-launcher`](https://github.com/dktapps-pm-pl/mc-w10-version-launcher) by **dktapps** and contributors (licensed under GPL-3.0).
-- **Modified & Modernized by [BUGrockLauncher](https://github.com/BUGrockLauncher) (2026)**: Complete UI redesign, modular multi-instance architecture, isolated save data management, Quick Play & instant version switcher, 3D skin viewer & built-in skin pack injection, Add-ons & Worlds manager, GDK (`.msixvc`) extraction & decryption key automation, and performance/stability improvements.
-
 ### Third-Party Libraries, Fonts & Data Sources
 - **[TinyXML-2](https://github.com/leethomason/tinyxml2)** — Licensed under the **zlib License**.
 - **[Newtonsoft.Json](https://www.newtonsoft.com/json)** — Licensed under the **MIT License**.
 - **[Microsoft.Web.WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/)** — Copyright © Microsoft Corporation (Redistributable SDK License).
 - **[Microsoft.Windows.CppWinRT](https://github.com/microsoft/cppwinrt)** — Licensed under the **MIT License**.
-- **Bundled Fonts (`Epilogue` & `Tajawal`)** — Licensed under the **SIL Open Font License 1.1 (OFL-1.1)**.
+- **Bundled Font (Epilogue)** — Licensed under the **SIL Open Font License 1.1 (OFL-1.1)**.
 - **GDK Version Catalog** — Sourced from [`MinecraftBedrockArchiver/GdkLinks`](https://github.com/MinecraftBedrockArchiver/GdkLinks).
 
 ### Trademark Disclaimer
