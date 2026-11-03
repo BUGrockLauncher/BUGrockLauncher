@@ -3515,7 +3515,7 @@
 
 
                         <!-- Card 1: Addons & Textures Split Card (Left) -->
-                        <Border Grid.Column="0" x:Name="CardModsAndTexturesBorder" helpers:AnimationHelper.EnableCardHover="True" Margin="4,3,2,4" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
+                        <Border Grid.Column="0" x:Name="CardModsAndTexturesBorder" Margin="4,3,2,4" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
 
 
 
@@ -3551,7 +3551,7 @@
 
 
 
-                                <Border Grid.Row="0" x:Name="CardModsSection" helpers:AnimationHelper.EnableInteractiveAnimations="True" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardModsSection_Click">
+                                <Border Grid.Row="0" x:Name="CardModsSection" CornerRadius="7,7,0,0" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardModsSection_Click">
 
 
 
@@ -3647,7 +3647,7 @@
 
 
 
-                                        <TextBlock Grid.Column="2" Text="➔" Foreground="#38A169" FontSize="13" VerticalAlignment="Center" FontWeight="Bold" Margin="4,0,2,0"/>
+                                        <Path Grid.Column="2" Data="M5 12h14M12 5l7 7-7 7" Stroke="#38A169" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" Margin="4,0,2,0"/>
 
 
 
@@ -3679,7 +3679,7 @@
 
 
 
-                                <Border Grid.Row="2" x:Name="CardTexturesSection" helpers:AnimationHelper.EnableInteractiveAnimations="True" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardTexturesSection_Click">
+                                <Border Grid.Row="2" x:Name="CardTexturesSection" CornerRadius="0,0,7,7" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardTexturesSection_Click">
 
 
 
@@ -3775,7 +3775,7 @@
 
 
 
-                                        <TextBlock Grid.Column="2" Text="➔" Foreground="#F59E0B" FontSize="13" VerticalAlignment="Center" FontWeight="Bold" Margin="4,0,2,0"/>
+                                        <Path Grid.Column="2" Data="M5 12h14M12 5l7 7-7 7" Stroke="#F59E0B" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" Margin="4,0,2,0"/>
 
 
 
@@ -4169,7 +4169,7 @@
 
 
                         <!-- Card 3: Maps & Skins Split Card (Right) -->
-                        <Border Grid.Column="4" x:Name="CardMapsAndSkinsBorder" helpers:AnimationHelper.EnableCardHover="True" Margin="2,3,4,4" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
+                        <Border Grid.Column="4" x:Name="CardMapsAndSkinsBorder" Margin="2,3,4,4" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
 
 
 
@@ -4205,7 +4205,7 @@
 
 
 
-                                <Border Grid.Row="0" x:Name="CardMapsSection" helpers:AnimationHelper.EnableInteractiveAnimations="True" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardMapsSection_Click">
+                                <Border Grid.Row="0" x:Name="CardMapsSection" CornerRadius="7,7,0,0" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardMapsSection_Click">
 
 
 
@@ -4301,7 +4301,7 @@
 
 
 
-                                        <TextBlock Grid.Column="2" Text="➔" Foreground="#60A5FA" FontSize="13" VerticalAlignment="Center" FontWeight="Bold" Margin="4,0,2,0"/>
+                                        <Path Grid.Column="2" Data="M5 12h14M12 5l7 7-7 7" Stroke="#60A5FA" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" Margin="4,0,2,0"/>
 
 
 
@@ -4333,7 +4333,7 @@
 
 
 
-                                <Border Grid.Row="2" x:Name="CardSkinsSection" helpers:AnimationHelper.EnableInteractiveAnimations="True" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardSkinsSection_Click">
+                                <Border Grid.Row="2" x:Name="CardSkinsSection" CornerRadius="0,0,7,7" Background="#181A24" Padding="12,10" Cursor="Hand" MouseLeftButtonDown="CardSkinsSection_Click">
 
 
 
@@ -4429,7 +4429,7 @@
 
 
 
-                                        <TextBlock Grid.Column="2" Text="➔" Foreground="#C084FC" FontSize="13" VerticalAlignment="Center" FontWeight="Bold" Margin="4,0,2,0"/>
+                                        <Path Grid.Column="2" Data="M5 12h14M12 5l7 7-7 7" Stroke="#C084FC" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center" Margin="4,0,2,0"/>
 
 
 
@@ -10723,7 +10723,7 @@
 
 
 
-                    <TextBlock Text="v1.1.0" Foreground="#FFFFFF" FontSize="11"/>
+                    <TextBlock Text="v1.1.1" Foreground="#FFFFFF" FontSize="11"/>
 
 
 
