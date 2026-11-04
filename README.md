@@ -1,6 +1,6 @@
 # BUGrock Launcher
 
-[![Release: v1.1.5](https://img.shields.io/badge/Release-v1.1.6-10b981?style=for-the-badge&logo=github)](https://github.com/BUGrockLauncher/BUGrockLauncher/releases)
+[![Release: v1.1.5](https://img.shields.io/badge/Release-v1.1.7-10b981?style=for-the-badge&logo=github)](https://github.com/BUGrockLauncher/BUGrockLauncher/releases)
 [![Platform: Windows x64](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-2b6cb0?style=for-the-badge&logo=windows)](https://github.com/BUGrockLauncher/BUGrockLauncher)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](LICENSE.txt)
 
