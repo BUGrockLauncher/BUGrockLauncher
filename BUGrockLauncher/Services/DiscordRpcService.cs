@@ -54,6 +54,7 @@ namespace BUGrockLauncher.Services
 
         private static string? _lastActiveWorldName = null;
         private static DateTime _lastActiveWorldTime = DateTime.MinValue;
+        private static long _lastActiveWorldTimestamp = 0;
 
         public static bool IsConnected => _pipe != null && _pipe.IsConnected;
 
@@ -347,11 +348,7 @@ namespace BUGrockLauncher.Services
             return (opcode, json);
         }
 
-                #region Game State Detection (Player Name, Worlds, Server, Playtime)
-
-        private static string? _lastActiveWorldName = null;
-        private static DateTime _lastActiveWorldTime = DateTime.MinValue;
-        private static long _lastActiveWorldTimestamp = 0;
+        #region Game State Detection (Player Name, Worlds, Server, Playtime)
 
         private static void PollGameState()
         {
