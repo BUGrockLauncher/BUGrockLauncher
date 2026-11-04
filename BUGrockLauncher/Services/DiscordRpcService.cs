@@ -347,7 +347,11 @@ namespace BUGrockLauncher.Services
             return (opcode, json);
         }
 
-        #region Game State Detection (Player Name, Worlds, Server, Playtime)
+                #region Game State Detection (Player Name, Worlds, Server, Playtime)
+
+        private static string? _lastActiveWorldName = null;
+        private static DateTime _lastActiveWorldTime = DateTime.MinValue;
+        private static long _lastActiveWorldTimestamp = 0;
 
         private static void PollGameState()
         {
@@ -362,6 +366,7 @@ namespace BUGrockLauncher.Services
                     _isInGame = false;
                     _gameStartTimestamp = 0;
                     _lastActiveWorldName = null;
+                    _lastActiveWorldTimestamp = 0;
                     _currentDetails = "Minecraft Bedrock";
                     _currentState = "In Launcher";
                     _largeImage = DISCORD_ICON_URL;
@@ -371,24 +376,45 @@ namespace BUGrockLauncher.Services
                     return;
                 }
 
-                // Game IS running -> track start time
+                // Game IS running -> track start time accurately
                 _isInGame = true;
                 if (_gameStartTimestamp == 0)
                 {
-                    _gameStartTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    try
+                    {
+                        _gameStartTimestamp = new DateTimeOffset(mcProcs[0].StartTime.ToUniversalTime()).ToUnixTimeSeconds();
+                    }
+                    catch
+                    {
+                        _gameStartTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    }
                 }
 
                 // 1. Detect Player Name (from options.txt or preferences)
                 string playerName = DetectPlayerName();
 
-                // 2. Check if player is currently in a Singleplayer World
+                // 2. Check Singleplayer World
                 var activeWorld = DetectActiveWorld();
+
+                // 3. Check Multiplayer Server or Featured Experience
+                var activeServer = DetectActiveServer();
+
+                // If both seem active, compare timestamps:
+                // If server join timestamp is newer than the last world write timestamp, user transitioned to server
+                if (activeWorld.isInWorld && activeServer != null)
+                {
+                    if (activeServer.Timestamp > _lastActiveWorldTimestamp)
+                    {
+                        activeWorld = (false, string.Empty);
+                    }
+                }
+
                 if (activeWorld.isInWorld)
                 {
                     _currentDetails = "Minecraft Bedrock";
                     _currentState = string.IsNullOrWhiteSpace(activeWorld.worldName)
-                        ? $"Playing Singleplayer World • {playerName}"
-                        : $"Playing Singleplayer World: {activeWorld.worldName} • {playerName}";
+                        ? $"{playerName} • Playing Singleplayer World"
+                        : $"{playerName} • Playing Singleplayer World: {activeWorld.worldName}";
                     _largeImage = DISCORD_ICON_URL;
                     _largeText = string.IsNullOrWhiteSpace(activeWorld.worldName)
                         ? "Singleplayer World"
@@ -398,29 +424,37 @@ namespace BUGrockLauncher.Services
                     return;
                 }
 
-                // 3. Check if player is connected to a verified Multiplayer Server
-                var activeServer = DetectActiveServer();
                 if (activeServer != null)
                 {
                     _currentDetails = "Minecraft Bedrock";
-                    string addrDisplay = activeServer.Address;
-                    if (!string.IsNullOrEmpty(activeServer.Port) && activeServer.Port != "19132" && !addrDisplay.Contains(":"))
+                    string addrDisplay = "";
+                    if (!string.IsNullOrWhiteSpace(activeServer.Address))
                     {
-                        addrDisplay += $":{activeServer.Port}";
+                        addrDisplay = activeServer.Address;
+                        if (!string.IsNullOrEmpty(activeServer.Port) && activeServer.Port != "19132" && !addrDisplay.Contains(":"))
+                        {
+                            addrDisplay += $":{activeServer.Port}";
+                        }
                     }
-                    _currentState = $"Playing on {activeServer.Name} ({addrDisplay}) • {playerName}";
+
+                    _currentState = !string.IsNullOrEmpty(addrDisplay)
+                        ? $"{playerName} • Playing on {activeServer.Name} ({addrDisplay})"
+                        : $"{playerName} • Playing on {activeServer.Name}";
+
                     _largeImage = DISCORD_ICON_URL;
-                    _largeText = $"Server: {activeServer.Name}";
+                    _largeText = !string.IsNullOrEmpty(addrDisplay)
+                        ? $"Server: {activeServer.Name} ({addrDisplay})"
+                        : $"Server: {activeServer.Name}";
                     _smallImage = "steve";
                     _smallText = $"Player: {playerName}";
                     return;
                 }
 
-                // 4. Default / Fallback: In Main Menu (no singleplayer world active, no server joined)
+                // 4. Default / Fallback: In Main Menu
                 _currentDetails = "Minecraft Bedrock";
-                _currentState = $"In Main Menu • Player: {playerName}";
+                _currentState = $"{playerName} • In Main Menu";
                 _largeImage = DISCORD_ICON_URL;
-                _largeText = "Minecraft Bedrock";
+                _largeText = "Minecraft Bedrock (Menu)";
                 _smallImage = "steve";
                 _smallText = $"Player: {playerName}";
             }
@@ -540,6 +574,7 @@ namespace BUGrockLauncher.Services
                             string wName = WorldBackupHelper.GetWorldFriendlyName(sub);
                             _lastActiveWorldName = wName;
                             _lastActiveWorldTime = now;
+                            _lastActiveWorldTimestamp = new DateTimeOffset(now).ToUnixTimeSeconds();
                             return (true, wName);
                         }
                     }
@@ -566,18 +601,125 @@ namespace BUGrockLauncher.Services
                     {
                         Name = _manualServerName,
                         Address = _manualServerIp,
-                        Port = _manualServerPort ?? "19132"
+                        Port = _manualServerPort ?? "19132",
+                        Timestamp = new DateTimeOffset(_manualServerSetTime).ToUnixTimeSeconds()
                     };
                 }
             }
 
-            // 2. Read external_servers.txt to inspect known servers joined in the current game session
-            var servers = GetAllSavedServers();
-            if (servers.Count > 0 && _gameStartTimestamp > 0)
+            // 2. Collect server and experience candidates across all game locations
+            var candidates = new List<ServerPresenceInfo>();
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+            var mojangRoots = new List<string>();
+
+            // GDK Bedrock Users
+            string gdkUsers = Path.Combine(appData, "Minecraft Bedrock", "Users");
+            if (Directory.Exists(gdkUsers))
             {
-                // Only consider servers with a timestamp recorded during this active session
-                var sessionServer = servers
-                    .Where(s => s.Timestamp > 0 && s.Timestamp >= (_gameStartTimestamp - 15))
+                foreach (var userDir in Directory.GetDirectories(gdkUsers))
+                {
+                    string peDir = Path.Combine(userDir, "games", "com.mojang", "minecraftpe");
+                    if (Directory.Exists(peDir)) mojangRoots.Add(peDir);
+                }
+            }
+
+            // UWP LocalState
+            string uwpPe = Path.Combine(localAppData, "Packages", "Microsoft.MinecraftUWP_8wekyb3d8bbwe", "LocalState", "games", "com.mojang", "minecraftpe");
+            if (Directory.Exists(uwpPe)) mojangRoots.Add(uwpPe);
+
+            // Custom instances
+            string instancesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "instances");
+            if (Directory.Exists(instancesFolder))
+            {
+                foreach (var inst in Directory.GetDirectories(instancesFolder))
+                {
+                    string peDir = Path.Combine(inst, "data", "games", "com.mojang", "minecraftpe");
+                    if (Directory.Exists(peDir)) mojangRoots.Add(peDir);
+                }
+            }
+
+            foreach (var peDir in mojangRoots)
+            {
+                // A. Inspect recentlyPlayed/*.json (Featured Partner Servers & Marketplace Experiences)
+                string recentlyPlayedDir = Path.Combine(peDir, "recentlyPlayed");
+                if (Directory.Exists(recentlyPlayedDir))
+                {
+                    try
+                    {
+                        foreach (var jsonFile in Directory.GetFiles(recentlyPlayedDir, "*.json"))
+                        {
+                            try
+                            {
+                                string content = File.ReadAllText(jsonFile);
+                                var obj = JObject.Parse(content);
+                                var entries = obj["entries"] as JArray;
+                                if (entries != null)
+                                {
+                                    foreach (var entry in entries)
+                                    {
+                                        string targetType = entry["target"]?["type"]?.ToString() ?? "";
+                                        if (targetType.Equals("LocalWorld", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            continue;
+                                        }
+
+                                        string displayName = entry["displayName"]?.ToString() ?? "";
+                                        long ts = entry["lastSuccessfulJoinTimeEpochSeconds"]?.Value<long>() ?? 0;
+
+                                        if (!string.IsNullOrWhiteSpace(displayName) && ts > 0)
+                                        {
+                                            var (cleanName, address) = ResolveServerInfo(displayName);
+                                            candidates.Add(new ServerPresenceInfo
+                                            {
+                                                Name = cleanName,
+                                                Address = address,
+                                                Port = "19132",
+                                                Timestamp = ts
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                    catch { }
+                }
+
+                // B. Inspect external_servers.txt (Custom multiplayer servers added by user)
+                string extFile = Path.Combine(peDir, "external_servers.txt");
+                if (File.Exists(extFile))
+                {
+                    try
+                    {
+                        foreach (var line in File.ReadAllLines(extFile))
+                        {
+                            var parts = line.Split(':');
+                            if (parts.Length >= 4)
+                            {
+                                long ts = 0;
+                                if (parts.Length >= 5) long.TryParse(parts[4], out ts);
+                                candidates.Add(new ServerPresenceInfo
+                                {
+                                    Name = parts[1].Trim(),
+                                    Address = parts[2].Trim(),
+                                    Port = parts[3].Trim(),
+                                    Timestamp = ts
+                                });
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            // 3. Filter candidates to current game session
+            if (candidates.Count > 0 && _gameStartTimestamp > 0)
+            {
+                var sessionServer = candidates
+                    .Where(s => s.Timestamp > 0 && s.Timestamp >= (_gameStartTimestamp - 120))
                     .OrderByDescending(s => s.Timestamp)
                     .FirstOrDefault();
 
@@ -592,52 +734,38 @@ namespace BUGrockLauncher.Services
             return null;
         }
 
-        private static List<ServerPresenceInfo> GetAllSavedServers()
+        private static (string name, string address) ResolveServerInfo(string rawName)
         {
-            var servers = new List<ServerPresenceInfo>();
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-
-            var paths = new List<string>();
-            string gdkUsers = Path.Combine(appData, "Minecraft Bedrock", "Users");
-            if (Directory.Exists(gdkUsers))
+            string lower = rawName.Trim().ToLowerInvariant();
+            if (lower.Contains("cubecraft"))
             {
-                foreach (var userDir in Directory.GetDirectories(gdkUsers))
-                {
-                    string f = Path.Combine(userDir, "games", "com.mojang", "minecraftpe", "external_servers.txt");
-                    if (File.Exists(f)) paths.Add(f);
-                }
+                return ("CubeCraft", "play.cubecraft.net");
             }
-            string uwpServers = Path.Combine(localAppData, "Packages", "Microsoft.MinecraftUWP_8wekyb3d8bbwe", "LocalState", "games", "com.mojang", "minecraftpe", "external_servers.txt");
-            if (File.Exists(uwpServers)) paths.Add(uwpServers);
-
-            foreach (var p in paths)
+            if (lower.Contains("hive"))
             {
-                try
-                {
-                    foreach (var line in File.ReadAllLines(p))
-                    {
-                        var parts = line.Split(':');
-                        if (parts.Length >= 4)
-                        {
-                            long ts = 0;
-                            if (parts.Length >= 5) long.TryParse(parts[4], out ts);
-                            servers.Add(new ServerPresenceInfo
-                            {
-                                Name = parts[1].Trim(),
-                                Address = parts[2].Trim(),
-                                Port = parts[3].Trim(),
-                                Timestamp = ts
-                            });
-                        }
-                    }
-                }
-                catch { }
+                return ("The Hive", "geo.hivebedrock.network");
+            }
+            if (lower.Contains("lifeboat"))
+            {
+                return ("Lifeboat", "play.lbsg.net");
+            }
+            if (lower.Contains("mineville") || lower.Contains("inpvp"))
+            {
+                return ("Mineville", "play.inpvp.net");
+            }
+            if (lower.Contains("galaxite"))
+            {
+                return ("Galaxite", "play.galaxite.net");
+            }
+            if (lower.Contains("pixel paradise"))
+            {
+                return ("Pixel Paradise", "play.pixelparadise.gg");
             }
 
-            return servers.OrderByDescending(s => s.Timestamp).ToList();
+            return (rawName.Trim(), "");
         }
 
         #endregion
     }
 }
+
