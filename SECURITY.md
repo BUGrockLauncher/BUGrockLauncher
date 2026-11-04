@@ -6,7 +6,8 @@ Only the latest release of **BUGrock Launcher** is actively supported with secur
 
 | Version | Supported |
 | :--- | :--- |
-| **v1.1.4 (Latest)** | :white_check_mark: |
+| **v1.1.5 (Latest)** | :white_check_mark: |
+| v1.1.4 | :white_check_mark: |
 | v1.1.3 | :white_check_mark: |
 | **Older Versions** | :x: |
 

@@ -110,7 +110,7 @@ namespace BUGrockLauncher {
 
             if (main.UserPrefs.DiscordRpcEnabled) {
 
-                DiscordRpcService.Initialize(true);
+                DiscordRpcService.Initialize(true, main.UserPrefs.DiscordClientId);
 
             }
 
