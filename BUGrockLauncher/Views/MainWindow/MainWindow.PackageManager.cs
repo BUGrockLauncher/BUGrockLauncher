@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -62,7 +62,7 @@ namespace BUGrockLauncher {
 
                     // Discord RPC update
                     if (UserPrefs.DiscordRpcEnabled) {
-                        DiscordRpcService.UpdatePresence("Playing Minecraft Bedrock", $"Version: {v.Name}", inGame: true);
+                        DiscordRpcService.UpdatePresence("Minecraft Bedrock", $"Launching {v.Name}...", inGame: true);
                     }
                     // Check if switching away from external Minecraft without prior confirmation
                     if (!v.IsExternal) {

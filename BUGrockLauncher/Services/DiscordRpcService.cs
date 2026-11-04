@@ -31,6 +31,9 @@ namespace BUGrockLauncher.Services
         // Official, verified Minecraft application ID with 150+ uploaded Rich Presence assets (overworld, steve, minecraft_server, bedrock, etc.)
         public const string DEFAULT_CLIENT_ID = "450485984333660181";
 
+        // Official high-resolution BUGrock Glitch Cube Discord presence icon
+        public const string DISCORD_ICON_URL = "https://raw.githubusercontent.com/BUGrockLauncher/BUGrockLauncher/master/BUGrockLauncher/Assets/bugrock_discord_cube.png";
+
         private static NamedPipeClientStream? _pipe;
         private static bool _isRunning = false;
         private static bool _isEnabled = true;
@@ -40,9 +43,9 @@ namespace BUGrockLauncher.Services
         private static long _gameStartTimestamp = 0;
         private static long _launcherStartTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-        private static string _currentDetails = "In Launcher";
-        private static string _currentState = "Browsing Bedrock Versions";
-        private static string _largeImage = "bedrock";
+        private static string _currentDetails = "Minecraft Bedrock";
+        private static string _currentState = "In Launcher";
+        private static string _largeImage = DISCORD_ICON_URL;
         private static string _largeText = "BUGrock Launcher";
         private static string? _smallImage = null;
         private static string? _smallText = null;
@@ -246,6 +249,7 @@ namespace BUGrockLauncher.Services
             {
                 var activity = new JObject
                 {
+                    ["name"] = "BUGrock launcher",
                     ["details"] = _currentDetails,
                     ["state"] = _currentState
                 };
@@ -269,8 +273,8 @@ namespace BUGrockLauncher.Services
                 // Assets: Large Image + Small Image with custom tooltips
                 var assets = new JObject
                 {
-                    ["large_image"] = _largeImage,
-                    ["large_text"] = _largeText
+                    ["large_image"] = !string.IsNullOrEmpty(_largeImage) ? _largeImage : DISCORD_ICON_URL,
+                    ["large_text"] = !string.IsNullOrEmpty(_largeText) ? _largeText : "BUGrock Launcher"
                 };
 
                 if (!string.IsNullOrEmpty(_smallImage))
@@ -358,9 +362,9 @@ namespace BUGrockLauncher.Services
                     // Game is not running -> In Launcher
                     _isInGame = false;
                     _gameStartTimestamp = 0;
-                    _currentDetails = "In Launcher";
-                    _currentState = "Browsing Bedrock Versions";
-                    _largeImage = "bedrock";
+                    _currentDetails = "Minecraft Bedrock";
+                    _currentState = "In Launcher";
+                    _largeImage = DISCORD_ICON_URL;
                     _largeText = "BUGrock Launcher";
                     _smallImage = null;
                     _smallText = null;
@@ -382,10 +386,14 @@ namespace BUGrockLauncher.Services
                 if (activeWorld.isInWorld)
                 {
                     // Playing in Worlds
-                    _currentDetails = "Playing in Worlds";
-                    _currentState = $"Worlds: {activeWorld.worldName} • {playerName}";
-                    _largeImage = "overworld";
-                    _largeText = $"Minecraft Bedrock • Worlds ({activeWorld.worldName})";
+                    _currentDetails = "Minecraft Bedrock";
+                    _currentState = string.IsNullOrWhiteSpace(activeWorld.worldName)
+                        ? $"Playing in Worlds • {playerName}"
+                        : $"Playing in Worlds: {activeWorld.worldName} • {playerName}";
+                    _largeImage = DISCORD_ICON_URL;
+                    _largeText = string.IsNullOrWhiteSpace(activeWorld.worldName)
+                        ? "Minecraft Bedrock (Worlds)"
+                        : $"Worlds: {activeWorld.worldName}";
                     _smallImage = "steve";
                     _smallText = $"Player: {playerName}";
                     return;
@@ -396,10 +404,10 @@ namespace BUGrockLauncher.Services
                 if (activeServer != null)
                 {
                     // Playing on Multiplayer Server
-                    _currentDetails = $"Playing on {activeServer.Name}";
+                    _currentDetails = "Minecraft Bedrock";
                     string portSuffix = (activeServer.Port == "19132" || string.IsNullOrEmpty(activeServer.Port)) ? "" : $":{activeServer.Port}";
-                    _currentState = $"IP: {activeServer.Address}{portSuffix} • {playerName}";
-                    _largeImage = "minecraft_server";
+                    _currentState = $"Playing on {activeServer.Name} ({activeServer.Address}{portSuffix}) • {playerName}";
+                    _largeImage = DISCORD_ICON_URL;
                     _largeText = $"Server: {activeServer.Name}";
                     _smallImage = "steve";
                     _smallText = $"Player: {playerName}";
@@ -407,9 +415,9 @@ namespace BUGrockLauncher.Services
                 }
 
                 // 4. Fallback: In Main Menu
-                _currentDetails = "In Main Menu";
-                _currentState = $"Player: {playerName}";
-                _largeImage = "bedrock";
+                _currentDetails = "Minecraft Bedrock";
+                _currentState = $"In Main Menu • Player: {playerName}";
+                _largeImage = DISCORD_ICON_URL;
                 _largeText = "Minecraft Bedrock";
                 _smallImage = "steve";
                 _smallText = $"Player: {playerName}";

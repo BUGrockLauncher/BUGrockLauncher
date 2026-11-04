@@ -7,7 +7,7 @@
         AllowsTransparency="True"
         Background="Transparent"
         SizeToContent="Height"
-        Width="500"
+        Width="580"
         WindowStartupLocation="Manual"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
@@ -174,7 +174,7 @@
                 </Border>
 
                 <!-- Message Body -->
-                <Border Grid.Row="1" Padding="20,18" MaxHeight="450">
+                <Border Grid.Row="1" Padding="20,18" MaxHeight="520">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <TextBlock x:Name="MessageText" Foreground="#E2E8F0" FontSize="13" TextWrapping="Wrap" LineHeight="20"/>
                     </ScrollViewer>
