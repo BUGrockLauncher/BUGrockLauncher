@@ -368,38 +368,100 @@ namespace BUGrockLauncher {
             }
         }
 
-        private void SettingsFindWorldsBtn_Click(object sender, RoutedEventArgs e) {
+        private async void SettingsFindWorldsBtn_Click(object sender, RoutedEventArgs e) {
+            var btn = sender as Button;
+            object? prevContent = btn?.Content;
             try {
-                var worlds = WorldBackupHelper.GetAllDetectedWorldsInfo();
-                var dirs = WorldBackupHelper.FindAllWorldsDirectories();
+                if (btn != null) {
+                    btn.IsEnabled = false;
+                    btn.Content = "⏳ Scanning worlds...";
+                }
 
-                if (worlds.Count == 0) {
-                    ThemedMessageBox.Show("No Minecraft Bedrock worlds were found in your com.mojang directories.\n\nMake sure you have created or played a world at least once in Minecraft Bedrock.", "Find My Worlds", MessageBoxButton.OK, MessageBoxImage.Information);
+                var scanResult = await Task.Run(() => {
+                    var groups = WorldBackupHelper.GetDetectedVersionGroups();
+                    var dirs = WorldBackupHelper.FindAllWorldsDirectories();
+                    var allWorlds = WorldBackupHelper.GetAllDetectedWorldsInfo();
+
+                    var locationEntries = new List<(string category, string path, int count)>();
+                    foreach (var g in groups) {
+                        foreach (var srcDir in g.SourceDirectories) {
+                            if (Directory.Exists(srcDir)) {
+                                int count = WorldBackupHelper.SafeGetDirectoryCount(srcDir);
+                                if (count > 0) {
+                                    locationEntries.Add(($"{g.Category} ({g.VersionName})", srcDir, count));
+                                }
+                            }
+                        }
+                    }
+
+                    // Also check any additional directories in dirs not covered by groups
+                    foreach (var d in dirs) {
+                        if (!locationEntries.Any(le => le.path.Equals(d, StringComparison.OrdinalIgnoreCase))) {
+                            int count = WorldBackupHelper.SafeGetDirectoryCount(d);
+                            if (count > 0) {
+                                locationEntries.Add(("Detected Minecraft Worlds Folder", d, count));
+                            }
+                        }
+                    }
+
+                    string primaryDir = dirs.FirstOrDefault(d => WorldBackupHelper.SafeGetDirectoryCount(d) > 0)
+                                        ?? dirs.FirstOrDefault(Directory.Exists)
+                                        ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Packages", "Microsoft.MinecraftUWP_8wekyb3d8bbwe", "LocalState", "games", "com.mojang");
+
+                    return (allWorlds, locationEntries, primaryDir);
+                });
+
+                var (worlds, locations, primary) = scanResult;
+
+                if (worlds.Count == 0 && locations.Count == 0) {
+                    string notFoundMsg = "❌ No Minecraft Bedrock worlds were found on your computer.\n\nChecked standard locations:\n• GDK Bedrock Users (%AppData%\\Minecraft Bedrock\\Users)\n• UWP Bedrock LocalState (%LocalAppData%\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe)\n• Launcher Instances (instances/*)\n\nMake sure you have launched Minecraft Bedrock and created or played a world at least once.";
+                    ShowMessageGuaranteed(notFoundMsg, "Find My Worlds", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
                 var sb = new System.Text.StringBuilder();
-                sb.AppendLine($"🔍 Found {worlds.Count} Minecraft Bedrock world(s) across {dirs.Count} location(s):\n");
+                sb.AppendLine($"🔍 Found {worlds.Count} Minecraft Bedrock world(s) across {locations.Count} storage location(s):\n");
 
-                int displayCount = Math.Min(worlds.Count, 8);
-                for (int i = 0; i < displayCount; i++) {
-                    var w = worlds[i];
-                    sb.AppendLine($"• {w.DisplayName} ({w.SizeFormatted}) - Last played: {w.LastModified:yyyy-MM-dd}");
-                }
-                if (worlds.Count > displayCount) {
-                    sb.AppendLine($"... and {worlds.Count - displayCount} more world(s).");
+                sb.AppendLine("📂 Detected World Storage Paths:");
+                foreach (var loc in locations) {
+                    sb.AppendLine($"• [{loc.category}] ({loc.count} worlds)\n  Path: {loc.path}\n");
                 }
 
-                sb.AppendLine("\nPrimary Location:");
-                sb.AppendLine(dirs.FirstOrDefault() ?? "Unknown");
+                if (worlds.Count > 0) {
+                    sb.AppendLine("🌍 Recent Worlds Detected:");
+                    int displayCount = Math.Min(worlds.Count, 6);
+                    for (int i = 0; i < displayCount; i++) {
+                        var w = worlds[i];
+                        sb.AppendLine($"• {w.DisplayName} ({w.SizeFormatted}) - Last played: {w.LastModified:yyyy-MM-dd}");
+                    }
+                    if (worlds.Count > displayCount) {
+                        sb.AppendLine($"... and {worlds.Count - displayCount} more world(s).");
+                    }
+                }
+
+                sb.AppendLine("\n📁 Primary Folder:");
+                sb.AppendLine(primary);
                 sb.AppendLine("\nWould you like to open your primary worlds folder in File Explorer?");
 
-                var result = ThemedMessageBox.Show(sb.ToString(), "Find My Worlds", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                var result = ShowMessageGuaranteed(sb.ToString(), "Find My Worlds", MessageBoxButton.YesNo, MessageBoxImage.Information);
                 if (result == MessageBoxResult.Yes) {
                     WorldBackupHelper.OpenPrimaryWorldsFolder();
                 }
             } catch (Exception ex) {
-                ThemedMessageBox.Show($"Error locating worlds: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowMessageGuaranteed($"Error locating worlds: {ex.Message}", "Find My Worlds", MessageBoxButton.OK, MessageBoxImage.Error);
+            } finally {
+                if (btn != null) {
+                    btn.IsEnabled = true;
+                    btn.Content = prevContent ?? "🔍 Find My Worlds";
+                }
+            }
+        }
+
+        private MessageBoxResult ShowMessageGuaranteed(string message, string title, MessageBoxButton buttons, MessageBoxImage icon) {
+            try {
+                return ThemedMessageBox.Show(message, title, buttons, icon, this);
+            } catch {
+                return MessageBox.Show(this, message, title, buttons, icon);
             }
         }
 
