@@ -5,11 +5,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using BUGrockLauncher.Helpers;
@@ -28,7 +24,7 @@ namespace BUGrockLauncher.Services
 
     public static class DiscordRpcService
     {
-        // Official, verified Minecraft application ID with 150+ uploaded Rich Presence assets (overworld, steve, minecraft_server, bedrock, etc.)
+        // Official, verified Minecraft application ID with 150+ uploaded Rich Presence assets
         public const string DEFAULT_CLIENT_ID = "450485984333660181";
 
         // Official high-resolution BUGrock Glitch Cube Discord presence icon
@@ -55,6 +51,9 @@ namespace BUGrockLauncher.Services
         private static string? _manualServerIp = null;
         private static string? _manualServerPort = null;
         private static DateTime _manualServerSetTime = DateTime.MinValue;
+
+        private static string? _lastActiveWorldName = null;
+        private static DateTime _lastActiveWorldTime = DateTime.MinValue;
 
         public static bool IsConnected => _pipe != null && _pipe.IsConnected;
 
@@ -151,7 +150,9 @@ namespace BUGrockLauncher.Services
             }
             catch { }
 
+            _isInGame = false;
             _gameStartTimestamp = 0;
+            _lastActiveWorldName = null;
         }
 
         private static async Task WorkerLoop(CancellationToken token)
@@ -207,7 +208,6 @@ namespace BUGrockLauncher.Services
                     string pipeName = $"discord-ipc-{i}";
                     var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
 
-                    // Allow generous 1200ms timeout for Discord to accept IPC connection
                     await pipe.ConnectAsync(1200, token);
 
                     if (pipe.IsConnected)
@@ -228,7 +228,6 @@ namespace BUGrockLauncher.Services
                         }
                         else
                         {
-                            // Handshake failed or rejected by Discord
                             pipe.Dispose();
                             _pipe = null;
                         }
@@ -362,6 +361,7 @@ namespace BUGrockLauncher.Services
                     // Game is not running -> In Launcher
                     _isInGame = false;
                     _gameStartTimestamp = 0;
+                    _lastActiveWorldName = null;
                     _currentDetails = "Minecraft Bedrock";
                     _currentState = "In Launcher";
                     _largeImage = DISCORD_ICON_URL;
@@ -381,32 +381,34 @@ namespace BUGrockLauncher.Services
                 // 1. Detect Player Name (from options.txt or preferences)
                 string playerName = DetectPlayerName();
 
-                // 2. Check if player is currently in a local World
+                // 2. Check if player is currently in a Singleplayer World
                 var activeWorld = DetectActiveWorld();
                 if (activeWorld.isInWorld)
                 {
-                    // Playing in Worlds
                     _currentDetails = "Minecraft Bedrock";
                     _currentState = string.IsNullOrWhiteSpace(activeWorld.worldName)
-                        ? $"Playing in Worlds • {playerName}"
-                        : $"Playing in Worlds: {activeWorld.worldName} • {playerName}";
+                        ? $"Playing Singleplayer World • {playerName}"
+                        : $"Playing Singleplayer World: {activeWorld.worldName} • {playerName}";
                     _largeImage = DISCORD_ICON_URL;
                     _largeText = string.IsNullOrWhiteSpace(activeWorld.worldName)
-                        ? "Minecraft Bedrock (Worlds)"
-                        : $"Worlds: {activeWorld.worldName}";
+                        ? "Singleplayer World"
+                        : $"Singleplayer World: {activeWorld.worldName}";
                     _smallImage = "steve";
                     _smallText = $"Player: {playerName}";
                     return;
                 }
 
-                // 3. Check if player is connected to a Server
-                var activeServer = DetectActiveServer(mcProcs[0]);
+                // 3. Check if player is connected to a verified Multiplayer Server
+                var activeServer = DetectActiveServer();
                 if (activeServer != null)
                 {
-                    // Playing on Multiplayer Server
                     _currentDetails = "Minecraft Bedrock";
-                    string portSuffix = (activeServer.Port == "19132" || string.IsNullOrEmpty(activeServer.Port)) ? "" : $":{activeServer.Port}";
-                    _currentState = $"Playing on {activeServer.Name} ({activeServer.Address}{portSuffix}) • {playerName}";
+                    string addrDisplay = activeServer.Address;
+                    if (!string.IsNullOrEmpty(activeServer.Port) && activeServer.Port != "19132" && !addrDisplay.Contains(":"))
+                    {
+                        addrDisplay += $":{activeServer.Port}";
+                    }
+                    _currentState = $"Playing on {activeServer.Name} ({addrDisplay}) • {playerName}";
                     _largeImage = DISCORD_ICON_URL;
                     _largeText = $"Server: {activeServer.Name}";
                     _smallImage = "steve";
@@ -414,7 +416,7 @@ namespace BUGrockLauncher.Services
                     return;
                 }
 
-                // 4. Fallback: In Main Menu
+                // 4. Default / Fallback: In Main Menu (no singleplayer world active, no server joined)
                 _currentDetails = "Minecraft Bedrock";
                 _currentState = $"In Main Menu • Player: {playerName}";
                 _largeImage = DISCORD_ICON_URL;
@@ -502,27 +504,29 @@ namespace BUGrockLauncher.Services
                 {
                     foreach (var sub in Directory.GetDirectories(wDir))
                     {
-                        // Check if level.dat, db/CURRENT, or db/*.log was touched within the last 45 seconds
+                        // Check if level.dat, db/CURRENT, db/LOG, or db/*.log was touched within the last 75 seconds
                         string levelDat = Path.Combine(sub, "level.dat");
                         string dbDir = Path.Combine(sub, "db");
 
                         bool recentlyModified = false;
-                        if (File.Exists(levelDat) && (now - File.GetLastWriteTime(levelDat)).TotalSeconds < 45)
+                        if (File.Exists(levelDat) && (now - File.GetLastWriteTime(levelDat)).TotalSeconds < 75)
                         {
                             recentlyModified = true;
                         }
                         else if (Directory.Exists(dbDir))
                         {
                             string currentFile = Path.Combine(dbDir, "CURRENT");
-                            if (File.Exists(currentFile) && (now - File.GetLastWriteTime(currentFile)).TotalSeconds < 45)
+                            string logFile = Path.Combine(dbDir, "LOG");
+                            if ((File.Exists(currentFile) && (now - File.GetLastWriteTime(currentFile)).TotalSeconds < 75) ||
+                                (File.Exists(logFile) && (now - File.GetLastWriteTime(logFile)).TotalSeconds < 75))
                             {
                                 recentlyModified = true;
                             }
                             else
                             {
-                                foreach (var logFile in Directory.GetFiles(dbDir, "*.log"))
+                                foreach (var logFileItem in Directory.GetFiles(dbDir, "*.log"))
                                 {
-                                    if ((now - File.GetLastWriteTime(logFile)).TotalSeconds < 45)
+                                    if ((now - File.GetLastWriteTime(logFileItem)).TotalSeconds < 75)
                                     {
                                         recentlyModified = true;
                                         break;
@@ -534,6 +538,8 @@ namespace BUGrockLauncher.Services
                         if (recentlyModified)
                         {
                             string wName = WorldBackupHelper.GetWorldFriendlyName(sub);
+                            _lastActiveWorldName = wName;
+                            _lastActiveWorldTime = now;
                             return (true, wName);
                         }
                     }
@@ -541,10 +547,15 @@ namespace BUGrockLauncher.Services
                 catch { }
             }
 
+            if (!string.IsNullOrEmpty(_lastActiveWorldName) && (now - _lastActiveWorldTime).TotalSeconds < 60)
+            {
+                return (true, _lastActiveWorldName);
+            }
+
             return (false, string.Empty);
         }
 
-        private static ServerPresenceInfo? DetectActiveServer(Process mcProc)
+        private static ServerPresenceInfo? DetectActiveServer()
         {
             // 1. If user recently triggered a server launch from the launcher
             if (!string.IsNullOrEmpty(_manualServerName) && !string.IsNullOrEmpty(_manualServerIp))
@@ -560,66 +571,24 @@ namespace BUGrockLauncher.Services
                 }
             }
 
-            // 2. Read external_servers.txt to inspect known servers
+            // 2. Read external_servers.txt to inspect known servers joined in the current game session
             var servers = GetAllSavedServers();
-
-            // 3. Check for recently added or joined server in external_servers.txt
-            if (servers.Count > 0)
+            if (servers.Count > 0 && _gameStartTimestamp > 0)
             {
-                long currentUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                var recent = servers.FirstOrDefault(s => s.Timestamp > 0 && Math.Abs(currentUnix - s.Timestamp) < 1800);
-                if (recent != null)
+                // Only consider servers with a timestamp recorded during this active session
+                var sessionServer = servers
+                    .Where(s => s.Timestamp > 0 && s.Timestamp >= (_gameStartTimestamp - 15))
+                    .OrderByDescending(s => s.Timestamp)
+                    .FirstOrDefault();
+
+                if (sessionServer != null)
                 {
-                    return recent;
+                    return sessionServer;
                 }
             }
 
-            // 4. Featured Partner Bedrock Servers (The Hive, CubeCraft, Lifeboat, etc.)
-            var featuredServers = new List<ServerPresenceInfo>
-            {
-                new ServerPresenceInfo { Name = "The Hive", Address = "geo.hivebedrock.network", Port = "19132" },
-                new ServerPresenceInfo { Name = "CubeCraft", Address = "play.cubecraft.net", Port = "19132" },
-                new ServerPresenceInfo { Name = "Lifeboat", Address = "play.lbsg.net", Port = "19132" },
-                new ServerPresenceInfo { Name = "Mineville", Address = "play.inpvp.net", Port = "19132" },
-                new ServerPresenceInfo { Name = "Galaxite", Address = "play.galaxite.net", Port = "19132" }
-            };
-
-            // 5. Inspect active TCP connections for Minecraft.Windows.exe
-            try
-            {
-                var activeTcp = GetActiveTcpRemoteEndpoints(mcProc.Id);
-                foreach (var ep in activeTcp)
-                {
-                    string ipStr = ep.Address.ToString();
-                    if (IPAddress.IsLoopback(ep.Address) || ipStr.StartsWith("10.") || ipStr.StartsWith("192.168.")) continue;
-
-                    // Match against saved servers or featured servers
-                    var match = servers.Concat(featuredServers).FirstOrDefault(s =>
-                        s.Address.Equals(ipStr, StringComparison.OrdinalIgnoreCase));
-
-                    if (match != null) return match;
-
-                    return new ServerPresenceInfo
-                    {
-                        Name = "Multiplayer Server",
-                        Address = ipStr,
-                        Port = ep.Port.ToString()
-                    };
-                }
-            }
-            catch { }
-
-            // 6. If servers exist and Minecraft process has network listeners open, use the latest saved server
-            if (servers.Count > 0)
-            {
-                var latest = servers.OrderByDescending(s => s.Timestamp).First();
-                // If it was modified during the game session
-                if (latest.Timestamp > 0 && latest.Timestamp >= (_gameStartTimestamp - 60))
-                {
-                    return latest;
-                }
-            }
-
+            // Strictly return null if not connected to a verified server.
+            // NEVER guess or inspect random OS TCP connections to prevent IP leaks!
             return null;
         }
 
@@ -667,26 +636,6 @@ namespace BUGrockLauncher.Services
             }
 
             return servers.OrderByDescending(s => s.Timestamp).ToList();
-        }
-
-        private static List<IPEndPoint> GetActiveTcpRemoteEndpoints(int pid)
-        {
-            var results = new List<IPEndPoint>();
-            try
-            {
-                var properties = IPGlobalProperties.GetIPGlobalProperties();
-                var connections = properties.GetActiveTcpConnections();
-                // In standard .NET, GetActiveTcpConnections gives endpoint pairs
-                foreach (var conn in connections)
-                {
-                    if (conn.State == TcpState.Established && !IPAddress.IsLoopback(conn.RemoteEndPoint.Address))
-                    {
-                        results.Add(conn.RemoteEndPoint);
-                    }
-                }
-            }
-            catch { }
-            return results;
         }
 
         #endregion
