@@ -21,6 +21,10 @@ namespace BUGrockLauncher {
 
         public bool DiscordRpcEnabled { get; set; } = false;
 
+        public string DiscordClientId { get; set; } = "450485984333660181";
+
+        public string DiscordCustomPlayerName { get; set; } = "";
+
         [JsonProperty("VersionsApi")]
         public string VersionsApiUWP { get; set; } = "";
 

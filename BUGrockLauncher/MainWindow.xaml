@@ -9837,7 +9837,7 @@
 
 
 
-                                            <TextBlock Text="Shows your active Bedrock version and gameplay activity on your Discord profile." Foreground="#8E92A4" FontSize="11" Margin="0,3,0,0"/>
+                                            <TextBlock Text="Displays in-game playtime, player name, active worlds, or server name &amp; IP on Discord." Foreground="#8E92A4" FontSize="11" Margin="0,3,0,0"/>
 
 
 
@@ -9901,7 +9901,7 @@
 
 
 
-                                            <TextBlock Text="Displays BUGrock Launcher and your current Minecraft version status on Discord." Foreground="#767A92" FontSize="11" Margin="0,2,0,0"/>
+                                            <TextBlock Text="Shows game duration, player name, Worlds, or multiplayer server details on your Discord profile." Foreground="#767A92" FontSize="11" Margin="0,2,0,0"/>
 
 
 
@@ -10715,7 +10715,7 @@
 
 
 
-                    <TextBlock Text="v1.1.4" Foreground="#FFFFFF" FontSize="11"/>
+                    <TextBlock Text="v1.1.5" Foreground="#FFFFFF" FontSize="11"/>
 
 
 

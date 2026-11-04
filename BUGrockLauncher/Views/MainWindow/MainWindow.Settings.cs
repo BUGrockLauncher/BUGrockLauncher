@@ -459,7 +459,7 @@ namespace BUGrockLauncher {
         private void SettingsDiscordRpcToggle_Click(object sender, RoutedEventArgs e) {
             UserPrefs.DiscordRpcEnabled = SettingsDiscordRpcToggle.IsChecked ?? false;
             RewritePrefs();
-            DiscordRpcService.SetEnabled(UserPrefs.DiscordRpcEnabled);
+            DiscordRpcService.SetEnabled(UserPrefs.DiscordRpcEnabled, UserPrefs.DiscordClientId);
             UpdateDiscordStatusUI();
         }
 
