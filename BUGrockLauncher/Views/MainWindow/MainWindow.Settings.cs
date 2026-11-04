@@ -423,19 +423,24 @@ namespace BUGrockLauncher {
                     }
                 });
 
-                var (count, size, path) = await Task.Run(() => WorldBackupHelper.BackupWorldsNow(progress));
+                var res = await Task.Run(() => WorldBackupHelper.BackupAllVersionsOrganized(progress));
                 UpdateBackupStatusUI();
-                if (count > 0 && !string.IsNullOrEmpty(path)) {
-                    string sizeMb = (size / 1024.0 / 1024.0).ToString("F2");
-                    ThemedMessageBox.Show($"Backed up {count} world(s) successfully!\nArchive size: {sizeMb} MB\n\nSaved to:\n{path}", "Backup Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (res.TotalWorlds > 0 && res.CreatedArchives.Count > 0) {
+                    string sizeMb = (res.TotalBytes / 1024.0 / 1024.0).ToString("F2");
+                    string archivesList = string.Join("\n", res.CreatedArchives.Select(p => $"• {Path.GetFileName(p)}"));
+                    ThemedMessageBox.Show(
+                        $"Backed up {res.TotalWorlds} world(s) across {res.TotalVersions} version(s) successfully!\n" +
+                        $"Total size: {sizeMb} MB\n\n" +
+                        $"Organized Archives:\n{archivesList}\n\n" +
+                        $"Saved in:\n{WorldBackupHelper.BackupsDirectory}",
+                        "Backup Complete",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information
+                    );
 
-                    try {
-                        Process.Start("explorer.exe", $"/select,\"{path}\"");
-                    } catch {
-                        WorldBackupHelper.OpenBackupsFolder();
-                    }
+                    WorldBackupHelper.OpenBackupsFolder();
                 } else {
-                    ThemedMessageBox.Show("No Minecraft worlds found to backup in com.mojang.", "Notice");
+                    ThemedMessageBox.Show("No Minecraft worlds found to backup in any version.", "Notice", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             } catch (Exception ex) {
                 ThemedMessageBox.Show($"Backup failed: {ex.Message}", "Backup Error", MessageBoxButton.OK, MessageBoxImage.Error);

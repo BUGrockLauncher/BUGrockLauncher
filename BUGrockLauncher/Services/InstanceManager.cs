@@ -42,7 +42,7 @@ namespace BUGrockLauncher.Services
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             InstancesDirectory = Path.Combine(baseDir, "instances");
-            BackupsDirectory = Path.Combine(baseDir, "Backups instances");
+            BackupsDirectory = Path.Combine(baseDir, "Backups");
             InstancesJsonPath = Path.Combine(InstancesDirectory, "instances.json");
 
             try
@@ -287,10 +287,13 @@ namespace BUGrockLauncher.Services
             if (!Directory.Exists(BackupsDirectory)) Directory.CreateDirectory(BackupsDirectory);
 
             string safeName = SanitizeInstanceName(instance.Name);
-            // Formatted as: name_v<version>-yy-MM-dd-HH-mm.zip
-            string dateStamp = DateTime.Now.ToString("yy-MM-dd-HH-mm");
-            string zipFileName = $"{safeName}_v{oldVersion}-{dateStamp}.zip";
-            string zipFilePath = Path.Combine(BackupsDirectory, zipFileName);
+            string versionTag = string.IsNullOrWhiteSpace(oldVersion) ? "vUnknown" : (oldVersion.StartsWith("v", StringComparison.OrdinalIgnoreCase) ? oldVersion : "v" + oldVersion);
+            string versionFolder = Path.Combine(BackupsDirectory, $"{safeName}_{versionTag}".Trim('_'));
+            if (!Directory.Exists(versionFolder)) Directory.CreateDirectory(versionFolder);
+
+            string dateStamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            string zipFileName = $"{safeName}_{versionTag}_Worlds_{dateStamp}.zip";
+            string zipFilePath = Path.Combine(versionFolder, zipFileName);
 
             progressCallback?.Invoke("Creating compressed backup archive...", 20);
 
@@ -345,7 +348,9 @@ namespace BUGrockLauncher.Services
                                 else
                                 {
                                     // Preserve pre-existing un-isolated system data in BackupsDirectory before replacing with junction
-                                    string backupFolder = Path.Combine(BackupsDirectory, $"SystemData_Backup_{DateTime.Now:yy-MM-dd_HH-mm-ss_fff}");
+                                    string systemDataFolder = Path.Combine(BackupsDirectory, "SystemData");
+                                    if (!Directory.Exists(systemDataFolder)) Directory.CreateDirectory(systemDataFolder);
+                                    string backupFolder = Path.Combine(systemDataFolder, $"SystemData_Backup_{DateTime.Now:yyyy-MM-dd_HH-mm-ss_fff}");
                                     Trace.WriteLine($"Backing up existing system data from {targetMojang} to {backupFolder}");
                                     CopyDirectoryRecursive(targetMojang, backupFolder);
                                 }
