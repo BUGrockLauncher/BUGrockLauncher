@@ -42,10 +42,12 @@ namespace BUGrockLauncher {
             _hasLaunchTask = true;
             Task.Run(async () => {
                 try {
-                    // World Auto-Backup if enabled
+                    // World Auto-Backup if enabled (organized per version/instance)
                     if (UserPrefs.WorldAutoBackupEnabled) {
                         try {
-                            WorldBackupHelper.BackupWorldsNow();
+                            string verNum = v.VersionParts != null && v.VersionParts.Length > 0 ? string.Join(".", v.VersionParts) : v.Name;
+                            string targetName = !string.IsNullOrWhiteSpace(v.CustomInstanceName) ? v.CustomInstanceName : (!string.IsNullOrWhiteSpace(v.Name) ? v.Name : "Minecraft");
+                            WorldBackupHelper.BackupWorldsForSpecificVersion(targetName, verNum, v.DataDirectory);
                         } catch (Exception ex) {
                             Trace.WriteLine("World auto-backup error: " + ex.Message);
                         }

@@ -9733,7 +9733,7 @@
 
 
 
-                                            <TextBlock Text="Creates a compressed timestamped archive of all worlds in Backups\Worlds before the game launches." Foreground="#767A92" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                            <TextBlock Text="Creates organized version-specific ZIP backups of worlds in the Backups folder before the game launches." Foreground="#767A92" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
 
 
 
@@ -10715,7 +10715,7 @@
 
 
 
-                    <TextBlock Text="v1.1.3" Foreground="#FFFFFF" FontSize="11"/>
+                    <TextBlock Text="v1.1.4" Foreground="#FFFFFF" FontSize="11"/>
 
 
 
