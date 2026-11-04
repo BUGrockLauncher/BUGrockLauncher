@@ -204,7 +204,7 @@ namespace BUGrockLauncher.Helpers
             }
         }
 
-        public static void AttachCardHoverEffects(Border border)
+                public static void AttachCardHoverEffects(Border border)
         {
             border.RenderTransformOrigin = new Point(0.5, 0.5);
             ScaleTransform st;
@@ -219,21 +219,8 @@ namespace BUGrockLauncher.Helpers
             }
             RegisterScale(st);
 
-            Brush? origBorder = null;
-            border.Loaded += (s, e) =>
-            {
-                if (origBorder == null && border.BorderBrush != null)
-                {
-                    origBorder = border.BorderBrush;
-                }
-            };
-
             border.MouseEnter += (s, e) =>
             {
-                if (origBorder == null && border.BorderBrush != null)
-                {
-                    origBorder = border.BorderBrush;
-                }
                 if (!IsActive)
                 {
                     st.BeginAnimation(ScaleTransform.ScaleXProperty, null);
@@ -242,16 +229,11 @@ namespace BUGrockLauncher.Helpers
                     st.ScaleY = 1.0;
                     return;
                 }
-                AnimateScale(st, 1.008, 140);
-                border.BorderBrush = new SolidColorBrush(Color.FromRgb(0x38, 0xA1, 0x69));
+                AnimateScale(st, 1.012, 140);
             };
 
             border.MouseLeave += (s, e) =>
             {
-                if (origBorder != null)
-                {
-                    border.BorderBrush = origBorder;
-                }
                 if (!IsActive)
                 {
                     st.BeginAnimation(ScaleTransform.ScaleXProperty, null);
@@ -260,7 +242,7 @@ namespace BUGrockLauncher.Helpers
                     st.ScaleY = 1.0;
                     return;
                 }
-                AnimateScale(st, 1.0, 150);
+                AnimateScale(st, 1.0, 140);
             };
         }
 

@@ -1,7 +1,31 @@
 namespace BUGrockLauncher {
     public partial class MainWindow {
-        private const string ANTI_COOKIE_AND_POPUP_SCRIPT = @"
+                private const string ANTI_COOKIE_AND_POPUP_SCRIPT = @"
             (function() {
+                var isMcpedl = window.location.hostname.indexOf('mcpedl.com') !== -1;
+                var isCurseForge = window.location.hostname.indexOf('curseforge.com') !== -1;
+
+                if (isCurseForge) {
+                    // CurseForge is a modern React application. Never remove DOM nodes, click consent handlers,
+                    // or tamper with ad scripts, as doing so crashes React hydration and unmounts the download button.
+                    // Strictly enforce that project sidebars, download buttons, action containers, and files are permanently visible.
+                    var cfStyle = document.createElement('style');
+                    cfStyle.id = 'bugrock-curseforge-style';
+                    cfStyle.innerHTML = `
+                        aside, .project-sidebar, .sidebar-wrapper, .sidebar,
+                        .download-cta, .btn-cta, a[href*='/download'], a[href*='/files'],
+                        button[class*='download' i], [class*='download-button'],
+                        div[class*='actions' i], div[class*='details' i], div[class*='files' i],
+                        div[class*='file-row' i] {
+                            visibility: visible !important;
+                            opacity: 1 !important;
+                            pointer-events: auto !important;
+                        }
+                    `;
+                    if (document.head) document.head.appendChild(cfStyle);
+                    return;
+                }
+
                 // 1. Enable Native Dark Mode on MCPEDL using the site's own preferences and toggle
                 function applyNativeSiteDarkMode() {
                     try {
@@ -23,14 +47,11 @@ namespace BUGrockLauncher {
                     }
                 }
 
-                var isMcpedl = window.location.hostname.indexOf('mcpedl.com') !== -1;
-                var isCurseForge = window.location.hostname.indexOf('curseforge.com') !== -1;
-
                 if (isMcpedl) {
                     applyNativeSiteDarkMode();
                 }
 
-                // 2. Bypass Adblock Detectors (Fake ad properties so CurseForge/MCPEDL never show disable adblock banners)
+                // 2. Bypass Adblock Detectors (Fake ad properties so MCPEDL never shows disable adblock banners)
                 try {
                     window.canRunAds = true;
                     window.isAdBlockActive = false;
@@ -39,7 +60,7 @@ namespace BUGrockLauncher {
                     window.adsbygoogle = { push: function() {}, loaded: true };
                 } catch(e) {}
 
-                // 3. Inject CSS for Ads & Cookie Banners (Preserve CurseForge sidebar and download actions)
+                // 3. Inject CSS for Ads & Cookie Banners (MCPEDL / General)
                 var style = document.createElement('style');
                 var cssRules = `
                     #onetrust-consent-sdk, #onetrust-banner-sdk, .qc-cmp2-container, #cmpbox,
@@ -58,7 +79,7 @@ namespace BUGrockLauncher {
                     div[class*='ad-slot'], div[class*='advertisement'], div[class*='ad-banner'],
                     div[class*='ad-wrapper'], div[id*='ad-wrapper'],
                     div[id*='primis'], div[class*='primis'], div[id*='connatix'], div[class*='connatix'],
-                    div[id*='playwire'], div[class*='playwire'], div[id*='anyclip'], div[class*='anyclip'],
+                    div[id*='playwire'], div[class*='playwire'], div[id*='anyclip'], div[id*='anyclip'],
                     div[id*='taboola'], div[class*='taboola'], div[id*='outbrain'], div[class*='outbrain'],
                     div[class*='sticky-player'], div[class*='floating-player'], div[id*='floating-player'],
                     div[class*='video-ad'], div[id*='video-ad'], div[class*='jwplayer'], div[id*='jwplayer'],
@@ -145,24 +166,13 @@ namespace BUGrockLauncher {
                     `;
                 }
 
-                if (isCurseForge) {
-                    cssRules += `
-                        /* Preserve CurseForge project sidebar, download CTA, and file controls */
-                        aside, .project-sidebar, .sidebar, .sidebar-wrapper, div[class*='sidebar'],
-                        .download-cta, .btn-cta, a[href*='/download'], button[class*='download' i],
-                        div[class*='details' i], div[class*='files' i], div[class*='file-row' i] {
-                            visibility: visible !important;
-                            opacity: 1 !important;
-                            pointer-events: auto !important;
-                        }
-                    `;
-                }
-
                 style.innerHTML = cssRules;
                 if (document.head) document.head.appendChild(style);
 
-                // 4. Auto-dismiss any detected consent/adblock popups, ads, and floating videos
+                // 4. Auto-dismiss any detected consent/adblock popups, ads, and floating videos (MCPEDL only)
                 function dismissOverlays() {
+                    if (!isMcpedl) return;
+
                     var selectors = [
                         '#onetrust-reject-all-handler',
                         'button#didomi-notice-disagree-button',
@@ -177,7 +187,7 @@ namespace BUGrockLauncher {
                         }
                     }
 
-                    // Purge ads, videos, and trackers (CurseForge sidebar is strictly preserved)
+                    // Purge ads, videos, and trackers on MCPEDL
                     var badsQuery = `
                         ins.adsbygoogle, .adsbygoogle, iframe[src*='googlesyndication'],
                         div[id*='google_ads'], div[class*='ad-container'], div[class*='ad-slot'],
@@ -188,60 +198,57 @@ namespace BUGrockLauncher {
                         [class*='article__ad'], [class*='post__ad'], [id*='post__ad'],
                         div[class*='floating-player'], div[class*='sticky-player'], div[id*='floating-player'],
                         div[class*='video-ad'], div[id*='video-ad'], div[class*='jwplayer'],
-                        lite-youtube, .lite-youtube, iframe[src*='youtube']
+                        lite-youtube, .lite-youtube, iframe[src*='youtube'],
+                        aside, .sidebar, .layout__sidebar, .post__sidebar, div[class*='sidebar']
                     `;
-                    if (isMcpedl) {
-                        badsQuery += `, aside, .sidebar, .layout__sidebar, .post__sidebar, div[class*='sidebar']`;
-                    }
                     var bads = document.querySelectorAll(badsQuery);
                     for (var b = 0; b < bads.length; b++) {
                         bads[b].remove();
                     }
 
-                    if (isMcpedl) {
-                        // Format Skip to Downloads button and obliterate any ad between it and Introduction
-                        var allLinks = document.querySelectorAll('a');
-                        for (var i = 0; i < allLinks.length; i++) {
-                            var aEl = allLinks[i];
-                            var aTxt = (aEl.textContent || '').trim().toLowerCase();
-                            var aHref = aEl.getAttribute('href') || '';
-                            if (aTxt.indexOf('skip to download') !== -1 || (aHref.indexOf('#download') !== -1 && aTxt.indexOf('download') !== -1)) {
-                                if (aEl.textContent.indexOf('NOT AD :)') === -1) {
-                                    aEl.textContent = 'Skip to Downloads - NOT AD :) >';
-                                }
-                                aEl.style.setProperty('display', 'flex', 'important');
-                                aEl.style.setProperty('align-items', 'center', 'important');
-                                aEl.style.setProperty('justify-content', 'center', 'important');
-                                aEl.style.setProperty('width', '100%', 'important');
-                                aEl.style.setProperty('margin', '12px 0 16px 0', 'important');
-                                aEl.style.setProperty('padding', '12px 20px', 'important');
-                                aEl.style.setProperty('background-color', '#1F2937', 'important');
-                                aEl.style.setProperty('background', '#1F2937', 'important');
-                                aEl.style.setProperty('color', '#10B981', 'important');
-                                aEl.style.setProperty('border', '1px solid #374151', 'important');
-                                aEl.style.setProperty('border-radius', '8px', 'important');
-                                aEl.style.setProperty('font-size', '15px', 'important');
-                                aEl.style.setProperty('font-weight', '700', 'important');
-                                aEl.style.setProperty('text-decoration', 'none', 'important');
-                                aEl.style.setProperty('box-sizing', 'border-box', 'important');
-
-                                // Remove any sibling element between skip link and INTRODUCTION / DESCRIPTION
-                                var currEl = aEl.parentElement ? aEl.parentElement : aEl;
-                                var nextEl = currEl.nextElementSibling;
-                                while (nextEl) {
-                                    var nextText = (nextEl.textContent || '').trim().toUpperCase();
-                                    if (nextText.indexOf('INTRODUCTION') !== -1 || nextText.indexOf('DESCRIPTION') !== -1 || nextEl.querySelector('h2, h3')) {
-                                        break;
-                                    }
-                                    var toKill = nextEl;
-                                    nextEl = nextEl.nextElementSibling;
-                                    toKill.remove();
-                                }
-                                break;
+                    // Format Skip to Downloads button and obliterate any ad between it and Introduction
+                    var allLinks = document.querySelectorAll('a');
+                    for (var i = 0; i < allLinks.length; i++) {
+                        var aEl = allLinks[i];
+                        var aTxt = (aEl.textContent || '').trim().toLowerCase();
+                        var aHref = aEl.getAttribute('href') || '';
+                        if (aTxt.indexOf('skip to download') !== -1 || (aHref.indexOf('#download') !== -1 && aTxt.indexOf('download') !== -1)) {
+                            if (aEl.textContent.indexOf('NOT AD :)') === -1) {
+                                aEl.textContent = 'Skip to Downloads - NOT AD :) >';
                             }
+                            aEl.style.setProperty('display', 'flex', 'important');
+                            aEl.style.setProperty('align-items', 'center', 'important');
+                            aEl.style.setProperty('justify-content', 'center', 'important');
+                            aEl.style.setProperty('width', '100%', 'important');
+                            aEl.style.setProperty('margin', '12px 0 16px 0', 'important');
+                            aEl.style.setProperty('padding', '12px 20px', 'important');
+                            aEl.style.setProperty('background-color', '#1F2937', 'important');
+                            aEl.style.setProperty('background', '#1F2937', 'important');
+                            aEl.style.setProperty('color', '#10B981', 'important');
+                            aEl.style.setProperty('border', '1px solid #374151', 'important');
+                            aEl.style.setProperty('border-radius', '8px', 'important');
+                            aEl.style.setProperty('font-size', '15px', 'important');
+                            aEl.style.setProperty('font-weight', '700', 'important');
+                            aEl.style.setProperty('text-decoration', 'none', 'important');
+                            aEl.style.setProperty('box-sizing', 'border-box', 'important');
+
+                            // Remove any sibling element between skip link and INTRODUCTION / DESCRIPTION
+                            var currEl = aEl.parentElement ? aEl.parentElement : aEl;
+                            var nextEl = currEl.nextElementSibling;
+                            while (nextEl) {
+                                var nextText = (nextEl.textContent || '').trim().toUpperCase();
+                                if (nextText.indexOf('INTRODUCTION') !== -1 || nextText.indexOf('DESCRIPTION') !== -1 || nextEl.querySelector('h2, h3')) {
+                                    break;
+                                }
+                                var toKill = nextEl;
+                                nextEl = nextEl.nextElementSibling;
+                                toKill.remove();
+                            }
+                            break;
                         }
                     }
-                // Kill any floating video container docked at bottom-right
+
+                    // Kill any floating video container docked at bottom-right
                     var fixedEls = document.querySelectorAll('div, iframe');
                     for (var j = 0; j < fixedEls.length; j++) {
                         var el = fixedEls[j];
@@ -258,30 +265,31 @@ namespace BUGrockLauncher {
                         }
                     }
 
-                    if (window.location.hostname.indexOf('mcpedl.com') !== -1) {
-                        applyNativeSiteDarkMode();
+                    applyNativeSiteDarkMode();
+                }
+
+                if (isMcpedl) {
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', dismissOverlays);
+                    } else {
+                        dismissOverlays();
+                    }
+                    setTimeout(dismissOverlays, 300);
+                    setTimeout(dismissOverlays, 800);
+                    setTimeout(dismissOverlays, 2000);
+
+                    if (window.MutationObserver) {
+                        try {
+                            var observer = new MutationObserver(function() {
+                                dismissOverlays();
+                            });
+                            if (document.body) {
+                                observer.observe(document.body, { childList: true, subtree: true });
+                            }
+                        } catch(e) {}
                     }
                 }
 
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', dismissOverlays);
-                } else {
-                    dismissOverlays();
-                }
-                setTimeout(dismissOverlays, 300);
-                setTimeout(dismissOverlays, 800);
-                setTimeout(dismissOverlays, 2000);
-
-                if (window.MutationObserver) {
-                    try {
-                        var observer = new MutationObserver(function() {
-                            dismissOverlays();
-                        });
-                        if (document.body) {
-                            observer.observe(document.body, { childList: true, subtree: true });
-                        }
-                    } catch(e) {}
-                }
 
                 // Notify WPF launcher when mouse is inside webview document
                 try {

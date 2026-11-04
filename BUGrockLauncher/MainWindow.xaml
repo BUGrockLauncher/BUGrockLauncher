@@ -31,7 +31,7 @@
 
 
 
-        Title="BUGrock Launcher [Beta]" 
+        Title="BUGrock Launcher" 
 
 
 
@@ -2216,15 +2216,7 @@
 
 
 
-                    <Border Background="#D97706" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center">
-
-
-
-                        <TextBlock Text="BETA" Foreground="#FFFFFF" FontSize="9" FontWeight="Bold"/>
-
-
-
-                    </Border>
+                    
 
 
 
@@ -3515,7 +3507,7 @@
 
 
                         <!-- Card 1: Addons & Textures Split Card (Left) -->
-                        <Border Grid.Column="0" x:Name="CardModsAndTexturesBorder" Margin="4,3,2,4" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                        <Border Grid.Column="0" x:Name="CardModsAndTexturesBorder" helpers:AnimationHelper.EnableCardHover="True" Margin="4,3,2,4" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
 
 
 
@@ -3800,7 +3792,7 @@
 
 
                         <!-- Card 2: Featured Bedrock Servers (Center - Live Web View) -->
-                        <Border Grid.Column="2" x:Name="ServerCardBorder" Margin="2,3,2,4" Background="#151720" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
+                        <Border Grid.Column="2" x:Name="ServerCardBorder" helpers:AnimationHelper.EnableCardHover="True" Margin="2,3,2,4" Background="#151720" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
 
 
 
@@ -4169,7 +4161,7 @@
 
 
                         <!-- Card 3: Maps & Skins Split Card (Right) -->
-                        <Border Grid.Column="4" x:Name="CardMapsAndSkinsBorder" Margin="2,3,4,4" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+                        <Border Grid.Column="4" x:Name="CardMapsAndSkinsBorder" helpers:AnimationHelper.EnableCardHover="True" Margin="2,3,4,4" Background="#161822" BorderBrush="#252736" BorderThickness="1" CornerRadius="8" ClipToBounds="True" RenderTransformOrigin="0.5,0.5">
 
 
 
@@ -10723,7 +10715,7 @@
 
 
 
-                    <TextBlock Text="v1.1.2" Foreground="#FFFFFF" FontSize="11"/>
+                    <TextBlock Text="v1.1.3" Foreground="#FFFFFF" FontSize="11"/>
 
 
 
