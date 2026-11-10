@@ -13,6 +13,12 @@
     <Version>1.1.9</Version>
     <AssemblyVersion>1.1.9.0</AssemblyVersion>
     <FileVersion>1.1.9.0</FileVersion>
+    <Product>BUGrock Launcher</Product>
+    <Title>BUGrock Launcher</Title>
+    <Company>BUGrock</Company>
+    <Authors>BUGrock Launcher Contributors</Authors>
+    <Description>Modular Minecraft Bedrock Edition Launcher for Windows</Description>
+    <Copyright>Copyright © 2026 BUGrock Launcher Contributors. Licensed under GPL-3.0.</Copyright>
   </PropertyGroup>
 
   <PropertyGroup>
