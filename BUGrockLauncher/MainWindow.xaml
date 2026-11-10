@@ -2902,7 +2902,7 @@
 
 
 
-                            <RadioButton x:Name="TabNavAddons" Content="Edit Addons" Checked="TabNav_Checked" PreviewMouseLeftButtonDown="TabNav_PreviewMouseLeftButtonDown" GroupName="MainViews" Style="{StaticResource TopNavTabStyle}"/>
+                            <RadioButton x:Name="TabNavAddons" Content="Edit Instances" Checked="TabNav_Checked" PreviewMouseLeftButtonDown="TabNav_PreviewMouseLeftButtonDown" GroupName="MainViews" Style="{StaticResource TopNavTabStyle}"/>
 
 
 
@@ -3840,15 +3840,7 @@
 
 
 
-                                            <Border Background="#1C2E22" BorderBrush="#38A169" BorderThickness="1" CornerRadius="3" Padding="4,1" Margin="6,0,0,0">
-
-
-
-                                                <TextBlock Text="LIVE" Foreground="#38A169" FontSize="8.5" FontWeight="Bold"/>
-
-
-
-                                            </Border>
+                                            
 
 
 
@@ -10715,7 +10707,7 @@
 
 
 
-                    <TextBlock Text="v1.1.9" Foreground="#FFFFFF" FontSize="11"/>
+                    <TextBlock Text="v1.1.10" Foreground="#FFFFFF" FontSize="11"/>
 
 
 
@@ -10767,27 +10759,7 @@
 
 
 
-                <!-- Right: Privacy Policy & Terms of Use Links -->
-
-
-
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-
-
-
-                    <TextBlock Text="Privacy Policy" Foreground="#606478" FontSize="11" Margin="0,0,10,0" Cursor="Hand"/>
-
-
-
-                    <TextBlock Text="|" Foreground="#232530" Margin="0,0,10,0"/>
-
-
-
-                    <TextBlock Text="Terms of Use" Foreground="#606478" FontSize="11" Cursor="Hand"/>
-
-
-
-                </StackPanel>
+                
 
 
 
