@@ -1,10 +1,11 @@
 # BUGrock Launcher
 
 [![Release: v1.1.10](https://img.shields.io/badge/Release-v1.1.10-10b981?style=for-the-badge&logo=github)](https://github.com/BUGrockLauncher/BUGrockLauncher/releases)
+[![Website](https://img.shields.io/badge/Website-bugrocklauncher.github.io-9e1f9e?style=for-the-badge&logo=githubpages)](https://bugrocklauncher.github.io/)
 [![Platform: Windows x64](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011%20x64-2b6cb0?style=for-the-badge&logo=windows)](https://github.com/BUGrockLauncher/BUGrockLauncher)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](LICENSE.txt)
 
-A lightweight, modular **Minecraft Bedrock Edition Launcher for Windows 10 & 11 (x64)**. Designed for version management, multi-instance data isolation, automated world backups, and direct add-on sideloading across both **GDK (`.msixvc`)** and legacy **UWP (`.appx`)** packages.
+A modular **Minecraft Bedrock Edition Launcher for Windows 10 & 11 (x64)** focused on version management, multi-instance data isolation, optional world backups, and direct add-on importing across both **GDK (`.msixvc`)** and legacy **UWP (`.appx`)** packages.
 
 ---
 
@@ -21,36 +22,31 @@ Every release is packaged into two distinct distributions available on the [**Re
 
 ## Core Features
 
-### 1. Dual-Architecture Version Manager (GDK & UWP)
+### 1. Version Manager (GDK & UWP)
 - **Version Support**: Installs and launches official Bedrock Release, Preview, and Beta versions.
-- **Modern GDK Handling**: Automatic decryption key resolution and secure launch shim execution for modern `.msixvc` packages.
-- **Legacy UWP Support**: Sideloads and registers classic `.appx` builds directly through Windows AppX services.
-- **Manual Package Import**: Sideload external or local `.appx` and `.msixvc` packages via drag-and-drop or file picker.
+- **Dual Package Formats**: Supports modern **GDK (`.msixvc`)** packages and legacy **UWP (`.appx`)** packages.
+- **Import Package**: Sideload local `.appx` or `.msixvc` files via file picker or drag-and-drop.
 
-### 2. Multi-Instance Data Isolation
-- **Isolated Save Profiles**: Create, clone, rename, and manage independent game instances.
-- **Data Protection**: Each instance operates inside its own isolated `com.mojang` environment, preventing world corruption when switching between game versions.
-- **Safe Migration**: Automatically backs up un-isolated directories prior to creating instance junctions.
+### 2. Multi-Instance Data Isolation (`Edit Instances`)
+- **Isolated Profiles**: Create, clone, rename, and manage separate game instances in the **Edit Instances** tab.
+- **Data Protection**: Each instance uses its own isolated `com.mojang` folder via directory junctions so switching versions does not overwrite or corrupt existing worlds.
+- **Safe Migration**: Backs up existing un-isolated directories prior to linking new instances.
 
-### 3. World Auto-Backup System
-- **Pre-Launch Auto-Backup**: Optional background backup routine that archives world folders into timestamped ZIP files before launching Minecraft.
-- **Direct Streaming Engine**: Streams archive creation directly to disk with live progress feedback, preventing UI freezes on large worlds.
-- **Find My Worlds**: Dedicated shortcut to instantly open your active Minecraft world saves folder in Windows Explorer.
+### 3. World Auto-Backup
+- **Pre-Launch Backup**: Optional pre-launch routine that compresses world folders into timestamped `.zip` files before starting the game.
+- **Local Data Directory**: Quick shortcut in the sidebar to open the active Minecraft saves folder in Windows Explorer.
 
-### 4. Built-in Add-ons & Servers Hub
-- **Integrated Mod Browsing**: In-app WebView2 tabs for **MCPEDL** and **CurseForge** with automatic package download and installation.
-- **Format Sideloading**: 1-click import for `.mcpack`, `.mcaddon`, `.mcworld`, `.mctemplate`, and `.zip` archives.
-- **Live Bedrock Servers**: Browse popular Bedrock servers and join with one click via `minecraft://` protocol activation.
-- **Airspace Off-Screen Parking**: Intelligent WebView2 resource management that suspends background rendering when switching tabs to eliminate window clipping and conserve memory.
+### 4. Built-in Add-ons & Servers Browser
+- **Integrated Content Tabs**: Embedded WebView2 tabs for **MCPEDL** and **CurseForge** (`Add-ons & Mods`, `Texture Packs`, `Maps & Worlds`, `Skins & Packs`).
+- **Format Import**: Direct import support for `.mcpack`, `.mcaddon`, `.mcworld`, `.mctemplate`, and `.zip` archives.
+- **Servers List**: Built-in `minecraftpocket-servers.com` browser with 1-click `minecraft://` quick-join.
 
-### 5. UI Polish & Animation Engine
-- **Hardware-Accelerated UI**: WPF-based dark interface with custom vector controls and responsive transitions.
-- **Animation Control**: Smooth ease-in-out UI transitions with a master toggle in **Settings & Tools** to disable animations entirely on lower-end hardware.
-- **Low-Performance Mode**: Automatically disables animations and reduces background rendering tasks when set to Low mode.
+### 5. Skin Manager & Interface Settings
+- **3D Skin Preview**: Preview and upload custom `.png` character skins directly from the sidebar.
+- **Low-Performance Mode**: Toggle in **Settings & Tools** to disable UI animations on lower-end PCs.
 
 ### 6. System Diagnostics (`BUGrock_Check`)
-- **Dependency Verification**: Bundled diagnostic utility to inspect necessary Windows deployment services (`AppXSvc`, `ClipSvc`, `GamingServices`, `wuauserv`).
-- **Auto-Repair**: One-click startup repair for missing or disabled Windows gaming and store services.
+- **Dependency Check & Repair**: Bundled utility to check and start required Windows deployment and gaming services (`AppXSvc`, `ClipSvc`, `GamingServices`, `wuauserv`).
 
 ---
 
