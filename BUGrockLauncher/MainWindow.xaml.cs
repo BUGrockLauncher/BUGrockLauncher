@@ -782,6 +782,23 @@ namespace BUGrockLauncher {
             Close();
         }
 
+        private static void OpenExternalUrl(string url, string label) {
+            try {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            } catch (Exception ex) {
+                Trace.WriteLine($"Failed to open {label} URL ({url}): {ex.Message}");
+                ThemedMessageBox.Show($"Could not open {label} link in your default browser.\n{url}", "Open Link Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void BtnDiscord_Click(object sender, RoutedEventArgs e) {
+            OpenExternalUrl(AppConfig.DiscordInviteUrl, "Discord Server");
+        }
+
+        private void BtnDonate_Click(object sender, RoutedEventArgs e) {
+            OpenExternalUrl(AppConfig.DonateUrl, "Support & Donate");
+        }
+
 
         private static bool IsMinecraftRunning() {
             try {

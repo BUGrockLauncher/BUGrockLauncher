@@ -10,9 +10,9 @@
     <AssemblyName>BUGrock_Launcher</AssemblyName>
     <RootNamespace>BUGrockLauncher</RootNamespace>
     <ApplicationIcon>Assets\bugrock.ico</ApplicationIcon>
-    <Version>1.1.10</Version>
-    <AssemblyVersion>1.1.10.0</AssemblyVersion>
-    <FileVersion>1.1.10.0</FileVersion>
+    <Version>1.1.11</Version>
+    <AssemblyVersion>1.1.11.0</AssemblyVersion>
+    <FileVersion>1.1.11.0</FileVersion>
     <Product>BUGrock Launcher</Product>
     <Title>BUGrock Launcher</Title>
     <Company>BUGrock</Company>

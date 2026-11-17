@@ -94,5 +94,13 @@ namespace BUGrockLauncher
         public static string CurseForgeBedrockUrl => Get(
             "CURSEFORGE_BEDROCK_URL",
             "https://www.curseforge.com/minecraft-bedrock");
+
+        public static string DiscordInviteUrl => Get(
+            "DISCORD_INVITE_URL",
+            "https://discord.gg/wTR5GVSEDV");
+
+        public static string DonateUrl => Get(
+            "DONATE_URL",
+            "https://bugrocklauncher.github.io/#donate");
     }
 }
